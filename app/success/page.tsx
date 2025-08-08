@@ -5,11 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Sparkles, Check } from 'lucide-react'
 import Link from 'next/link'
 
-export default function OrderSuccessPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined }
-}) {
+export default function OrderSuccessPage({ searchParams }: any) {
   const raw = searchParams?.orderId
   const orderId = Array.isArray(raw) ? raw[0] : raw || 'Unknown'
   return (
