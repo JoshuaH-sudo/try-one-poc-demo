@@ -1,11 +1,11 @@
-// Server Component: read searchParams from props
+"use server"
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Sparkles, Check } from 'lucide-react'
 import Link from 'next/link'
 
-export default function OrderSuccessPage({ searchParams }: any) {
+export default async function OrderSuccessPage({ searchParams }: any) {
   const raw = searchParams?.orderId
   const orderId = Array.isArray(raw) ? raw[0] : raw || 'Unknown'
   return (

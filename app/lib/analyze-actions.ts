@@ -1,5 +1,5 @@
+import { openai } from "@/lib/openAi";
 import { fileToDataURL } from "@/lib/utils";
-import { openai } from "./tryon-actions";
 
 // Analyze person image using OpenAI Vision
 export async function analyzePersonImage(personImageFile: File) {

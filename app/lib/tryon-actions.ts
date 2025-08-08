@@ -1,16 +1,11 @@
 "use server";
 import { fileToDataURL } from "@/lib/utils";
-import OpenAI from "openai";
 import { analyzeClothingImage, analyzePersonImage } from "./analyze-actions";
+import { openai } from "@/lib/openAi";
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error("OPENAI_API_KEY not configured");
 }
-
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true,
-});
 
 // Generate try-on image using OpenAI image.edit()
 export async function generateTryOnWithOpenAI(
