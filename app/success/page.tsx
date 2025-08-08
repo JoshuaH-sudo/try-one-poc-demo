@@ -1,12 +1,12 @@
-"use server"
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Sparkles, Check } from 'lucide-react'
 import Link from 'next/link'
 
-export default async function OrderSuccessPage({ searchParams }: any) {
-  const raw = searchParams?.orderId
+export default async function OrderSuccessPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const sp = await searchParams
+  const raw = sp?.orderId
   const orderId = Array.isArray(raw) ? raw[0] : raw || 'Unknown'
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
