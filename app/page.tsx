@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Upload, User, Shirt, Sparkles, Check, Loader2, Zap, Brain, AlertCircle } from 'lucide-react'
+import { Upload, User, Shirt, Sparkles, Loader2, Zap, Brain, AlertCircle } from 'lucide-react'
 import TryOnPreview from '@/components/TryOnPreview'
 import { useToast } from '@/hooks/use-toast'
 import Image from 'next/image'
@@ -66,11 +66,7 @@ export default function VirtualTryOnPage() {
   const [isApproving, setIsApproving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
-  const [orderSuccess, setOrderSuccess] = useState<{
-    orderId: string
-    estimatedDelivery: string
-    trackingInfo: any
-  } | null>(null)
+  // Success UI moved to /success route
 
   const handleImageUpload = (
     files: FileList | null,
@@ -223,17 +219,17 @@ export default function VirtualTryOnPage() {
     }
   }
 
-  const startNewTryOn = () => {
-    setOrderSuccess(null)
-    setGeneratedResult(null)
-    setPersonImages([])
-    setClothingImages([])
-    setError(null)
-    toast({
-      title: "New session started",
-      description: "Ready for your next virtual try-on!",
-    })
-  }
+  // Helper available if you want to reset state manually; currently not used
+  // const startNewTryOn = () => {
+  //   setGeneratedResult(null)
+  //   setPersonImages([])
+  //   setClothingImages([])
+  //   setError(null)
+  //   toast({
+  //     title: "New session started",
+  //     description: "Ready for your next virtual try-on!",
+  //   })
+  // }
 
   const getModelInfo = (model: string) => {
     switch (model) {
@@ -266,150 +262,9 @@ export default function VirtualTryOnPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
-      <div className="max-w-6xl mx-auto">
-        {orderSuccess ? (
-          // Success Page (keeping existing success page code)
-          <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="w-10 h-10 text-green-600" />
-              </div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                Order Successfully Placed!
-              </h1>
-              <p className="text-lg text-gray-600">
-                Thank you for your order. We'll start processing it right away.
-              </p>
-            </div>
-
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-purple-600" />
-                  Order Confirmation
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Order ID</Label>
-                    <p className="text-lg font-mono bg-gray-100 p-2 rounded">{orderSuccess.orderId}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Estimated Delivery</Label>
-                    <p className="text-lg text-green-600 font-semibold">{orderSuccess.estimatedDelivery}</p>
-                  </div>
-                </div>
-                
-                <div className="border-t pt-4">
-                  <Label className="text-sm font-medium text-gray-700">Order Status</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                    <span className="text-blue-600 font-medium">{orderSuccess.trackingInfo.status}</span>
-                    <span className="text-gray-500 text-sm">• Next update in {orderSuccess.trackingInfo.nextUpdate}</span>
-                  </div>
-                </div>
-
-                {generatedResult && (
-                  <div className="border-t pt-4">
-                    <Label className="text-sm font-medium text-gray-700 mb-3 block">Your Custom Item</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="relative">
-                        <Image
-                          src={generatedResult.imageUrl || "/placeholder.svg"}
-                          alt="Your Custom Try-On"
-                          width={200}
-                          height={250}
-                          className="w-full rounded-lg shadow-md"
-                        />
-                      </div>
-                      <div className="space-y-3 text-sm">
-                        <div>
-                          <span className="font-medium">Item Type:</span> {generatedResult.clothingDetails.type}
-                        </div>
-                        <div>
-                          <span className="font-medium">Color:</span> {generatedResult.clothingDetails.primaryColor}
-                        </div>
-                        <div>
-                          <span className="font-medium">Style:</span> {generatedResult.clothingDetails.style}
-                        </div>
-                        <div>
-                          <span className="font-medium">Material:</span> {generatedResult.clothingDetails.material}
-                        </div>
-                        <div>
-                          <span className="font-medium">Fit:</span> {generatedResult.clothingDetails.fit}
-                        </div>
-                        <div className="pt-2 border-t">
-                          <span className="text-xs text-gray-500">
-                            Generated with {generatedResult.provider} • Custom-fitted based on your photos
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>What's Next?</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-blue-600">1</span>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Order Processing</h4>
-                      <p className="text-sm text-gray-600">We'll review your custom design and begin production within 24 hours.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-blue-600">2</span>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Email Confirmation</h4>
-                      <p className="text-sm text-gray-600">You'll receive a detailed confirmation email with tracking information.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-blue-600">3</span>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Production & Shipping</h4>
-                      <p className="text-sm text-gray-600">Your custom item will be produced and shipped to arrive by {orderSuccess.estimatedDelivery}.</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button
-                onClick={startNewTryOn}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                size="lg"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Try On More Items
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1"
-                size="lg"
-                onClick={() => window.open(`mailto:support@virtualtryon.com?subject=Order ${orderSuccess.orderId}`, '_blank')}
-              >
-                Contact Support
-              </Button>
-            </div>
-          </div>
-        ) : (
-          // Main Try-On Interface
-          <>
+    <div className="max-w-6xl mx-auto">
+      {/* Main Try-On Interface */}
+      <>
             <div className="text-center mb-8">
               <h1 className="text-4xl font-bold text-gray-900 mb-2">
                 Virtual Try-On Studio
@@ -666,7 +521,6 @@ export default function VirtualTryOnPage() {
               </div>
             </div>
           </>
-        )}
       </div>
     </div>
   )
