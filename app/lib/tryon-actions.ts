@@ -150,12 +150,13 @@ export async function generateTryOnImage(formData: FormData) {
       throw new Error("Both person and clothing images are required");
     }
 
-    // Validate file sizes (max 10MB per file)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    // Validate file sizes (max 1MB per file)
+    const maxSize = 1 * 1024 * 1024; // 1MB
     for (const img of [...personImages, ...clothingImages]) {
+      console.log(`Validating file size: ${img.name} (${img.size} bytes)`);
       if (img.size > maxSize) {
         throw new Error(
-          `File "${img.name}" is too large. Maximum size is 10MB.`
+          `File "${img.name}" is too large. Maximum size is 1MB.`
         );
       }
     }
