@@ -248,7 +248,7 @@ export default function VirtualTryOnPage() {
         }
       case 'openai':
         return {
-          name: 'OpenAI DALL-E',
+          name: 'OpenAI ChatGPT gpt-image-1',
           description: 'Advanced image editing with precise clothing application',
           icon: <Brain className="w-4 h-4" />,
           badge: 'Creative',
@@ -419,7 +419,7 @@ export default function VirtualTryOnPage() {
                 Upload your photos and clothing items to see how they look together with AI
               </p>
               <p className="text-sm text-purple-600 mt-1">
-                Real AI-powered virtual try-on using Fal AI FASHN and OpenAI DALL-E
+                Real AI-powered virtual try-on using Fal AI FASHN and OpenAI gpt-image-1
               </p>
             </div>
 
@@ -487,7 +487,7 @@ export default function VirtualTryOnPage() {
                             <Brain className="w-4 h-4 text-blue-600" />
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium">OpenAI DALL-E</span>
+                                <span className="font-medium">OpenAI gpt-image-1</span>
                                 <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
                                   Creative
                                 </span>
@@ -599,7 +599,7 @@ export default function VirtualTryOnPage() {
                           Upload clear photos of clothing items on a plain background. 
                           {selectedModel === 'fal-ai' 
                             ? 'Flat lay or mannequin photos work best for accurate try-on results.'
-                            : 'Clear product photos help DALL-E understand the garment details better.'
+                            : 'Clear product photos help gpt-image-1 understand the garment details better.'
                           }
                         </CardDescription>
                       </CardHeader>

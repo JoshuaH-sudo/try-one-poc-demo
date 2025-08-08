@@ -285,6 +285,7 @@ export async function generateTryOnWithOpenAI(
     }
 
     const generatedImageUrl = editResponse.data[0]?.b64_json;
+    const outputFormat = editResponse.output_format
 
     if (!generatedImageUrl) {
       throw new Error("No image generated from OpenAI edit");
@@ -293,7 +294,7 @@ export async function generateTryOnWithOpenAI(
     console.log("OpenAI try-on generation successful");
 
     return {
-      imageUrl: generatedImageUrl,
+      imageUrl: `data:image/${outputFormat};base64,${generatedImageUrl}`,
       modelUsed: "gpt-image-1",
       provider: "OpenAI",
       prompt: prompt,
