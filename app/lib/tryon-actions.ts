@@ -168,19 +168,7 @@ export async function generateTryOnImage(formData: FormData) {
     const finalClothingImages =
       selectedModel === "fal-ai" ? clothingImages.slice(0, 1) : clothingImages
 
-    // Enforce total body size limit (1MB across all images)
-    const MAX_TOTAL_BYTES = 1 * 1024 * 1024
-    const totalBytes = [...finalPersonImages, ...finalClothingImages].reduce(
-      (acc, f) => acc + (f?.size || 0),
-      0
-    )
-    if (totalBytes > MAX_TOTAL_BYTES) {
-      throw new Error(
-        `Total uploaded image size exceeds 1MB (received ${(totalBytes / 1024).toFixed(
-          0
-        )} KB). Please upload smaller images.`
-      )
-    }
+  // Total size restriction removed (handled via client compression and API route constraints)
 
     // Analyze images and generate try-on in parallel
     const [personDetails, clothingDetails, generationResult] = await Promise.all([

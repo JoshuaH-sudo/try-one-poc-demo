@@ -11,7 +11,6 @@ import { Upload, User, Shirt, Sparkles, Loader2, Zap, Brain, AlertCircle } from 
 import TryOnPreview from '@/components/TryOnPreview'
 import { useToast } from '@/hooks/use-toast'
 import Image from 'next/image'
-import { generateTryOnImage } from './lib/tryon-actions'
 import { compressImage } from './lib/utils'
 import { useRouter } from 'next/navigation'
 
@@ -191,16 +190,20 @@ export default function VirtualTryOnPage() {
         formData.append(`clothingImage_${i}`, compressed)
       }
 
-      console.log('Calling server action...')
-      
-      const result = await generateTryOnImage(formData)
-      
-      console.log('Server action result:', result)
-      
-      if (!result.success) {
+      console.log('Calling API route...')
+
+      const resp = await fetch('/api/try-on', {
+        method: 'POST',
+        body: formData,
+      })
+      const result = await resp.json()
+
+      console.log('API route result:', result)
+
+      if (!resp.ok || !result.success) {
         throw new Error(result.error || 'Generation failed')
       }
-      
+
       setGeneratedResult(result as GeneratedResult)
       
       toast({
