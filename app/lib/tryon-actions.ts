@@ -31,6 +31,11 @@ export async function generateTryOnWithOpenAI(
       size: "1024x1536",
     });
 
+    console.log("OpenAI edit response:", {
+      ...editResponse,
+      data: '[data contents hidden for logging]'
+    });
+
     if (!editResponse.data || editResponse.data.length === 0) {
       throw new Error("No images returned from OpenAI edit");
     }
@@ -162,6 +167,20 @@ export async function generateTryOnImage(formData: FormData) {
       selectedModel === "fal-ai" ? personImages.slice(0, 1) : personImages
     const finalClothingImages =
       selectedModel === "fal-ai" ? clothingImages.slice(0, 1) : clothingImages
+
+    // Enforce total body size limit (1MB across all images)
+    const MAX_TOTAL_BYTES = 1 * 1024 * 1024
+    const totalBytes = [...finalPersonImages, ...finalClothingImages].reduce(
+      (acc, f) => acc + (f?.size || 0),
+      0
+    )
+    if (totalBytes > MAX_TOTAL_BYTES) {
+      throw new Error(
+        `Total uploaded image size exceeds 1MB (received ${(totalBytes / 1024).toFixed(
+          0
+        )} KB). Please upload smaller images.`
+      )
+    }
 
     // Analyze images and generate try-on in parallel
     const [personDetails, clothingDetails, generationResult] = await Promise.all([
