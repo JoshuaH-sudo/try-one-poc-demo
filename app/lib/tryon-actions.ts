@@ -1,6 +1,9 @@
 "use server";
-import fs from "fs";
-import OpenAI, { toFile } from "openai";
+import OpenAI from "openai";
+
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error("OPENAI_API_KEY not configured");
+}
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -21,16 +24,8 @@ async function fileToDataURL(file: File): Promise<string> {
 
 // Analyze person image using OpenAI Vision
 export async function analyzePersonImage(personImageFile: File) {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY not configured");
-  }
-
   try {
     const personImageDataURL = await fileToDataURL(personImageFile);
-
-    // Create OpenAI client inside the function
-    const { default: OpenAI } = await import("openai");
-
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -70,25 +65,26 @@ export async function analyzePersonImage(personImageFile: File) {
     return {
       bodyType: extractValue(
         analysisText,
-        ["slim", "athletic", "average", "curvy", "plus size"],
-        "Average"
+        ["slim", "athletic", "average", "curvy", "plus size"]
       ),
-      gender: extractValue(analysisText, ["male", "female"], "Unknown"),
-      ageRange: "25-35",
-      height: "170cm",
+      gender: extractValue(analysisText, ["male", "female", "non-binary"]),
+      ageRange: extractAgeRange(analysisText),
+      height: extractHeight(analysisText),
       measurements: {
-        chest: "90cm",
-        waist: "75cm",
-        hips: "95cm",
-        shoulders: "40cm",
+        chest: extractMeasurement(analysisText, "chest"),
+        waist: extractMeasurement(analysisText, "waist"),
+        hips: extractMeasurement(analysisText, "hips"),
+        shoulders: extractMeasurement(analysisText, "shoulders"),
       },
       skinTone: extractValue(
         analysisText,
-        ["fair", "medium", "olive", "dark"],
-        "Medium"
+        ["fair", "medium", "olive", "dark", "tan", "light", "deep"]
       ),
-      pose: "Standing",
-      analysisConfidence: "85%",
+      pose: extractValue(
+        analysisText,
+        ["standing", "casual", "formal", "sitting", "walking", "running"]
+      ),
+      analysisConfidence: extractConfidence(analysisText),
     };
   } catch (error) {
     console.error("Person image analysis failed:", error);
@@ -108,9 +104,6 @@ export async function analyzeClothingImage(clothingImageFile: File) {
 
   try {
     const clothingImageDataURL = await fileToDataURL(clothingImageFile);
-
-    // Create OpenAI client inside the function
-    const { default: OpenAI } = await import("openai");
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -147,26 +140,109 @@ export async function analyzeClothingImage(clothingImageFile: File) {
       console.error("Failed to parse JSON from OpenAI response:", parseError);
     }
 
+    console.log('analyzed clothing image:', analysisText);
+
     // Fallback: extract information from text response
+    const colors = extractColors(analysisText);
     return {
       type: extractValue(
         analysisText,
-        ["t-shirt", "dress", "jacket", "sweater", "blouse", "pants", "skirt"],
-        "T-Shirt"
+        [
+          "t-shirt",
+          "tee",
+          "shirt",
+          "dress",
+          "jacket",
+          "sweater",
+          "hoodie",
+          "blouse",
+          "pants",
+          "jeans",
+          "trousers",
+          "shorts",
+          "skirt",
+          "coat",
+          "cardigan",
+        ]
       ),
-      primaryColor: extractValue(
+      primaryColor: colors[0] ?? "Unknown",
+      secondaryColor: colors[1] ?? null,
+      pattern: extractValue(
         analysisText,
-        ["black", "white", "blue", "red", "green", "pink", "purple"],
-        "Blue"
+        [
+          "solid",
+          "striped",
+          "floral",
+          "plaid",
+          "checked",
+          "polka dot",
+          "graphic",
+          "printed",
+          "paisley",
+          "animal print",
+        ]
       ),
-      secondaryColor: null,
-      pattern: "Solid",
-      material: "Cotton",
-      style: "Casual",
-      fit: "Regular",
-      sleeves: "Short",
-      neckline: "Round",
-      analysisConfidence: "85%",
+      material: extractValue(
+        analysisText,
+        [
+          "cotton",
+          "polyester",
+          "silk",
+          "linen",
+          "wool",
+          "denim",
+          "leather",
+          "rayon",
+          "spandex",
+          "nylon",
+          "satin",
+        ]
+      ),
+      style: extractValue(
+        analysisText,
+        [
+          "casual",
+          "formal",
+          "streetwear",
+          "sporty",
+          "business casual",
+          "vintage",
+          "boho",
+          "elegant",
+          "minimalist",
+          "smart",
+        ]
+      ),
+      fit: extractValue(
+        analysisText,
+        [
+          "tight",
+          "slim fit",
+          "regular",
+          "relaxed",
+          "loose",
+          "oversized",
+          "boxy",
+        ]
+      ),
+      sleeves: extractValue(
+        analysisText,
+        ["short", "long", "sleeveless", "3/4", "three-quarter", "cap"]
+      ),
+      neckline: extractValue(
+        analysisText,
+        [
+          "round",
+          "crew",
+          "v-neck",
+          "scoop",
+          "turtleneck",
+          "collared",
+          "button-down",
+          "henley",
+        ]
+      ),
+      analysisConfidence: extractConfidence(analysisText),
     };
   } catch (error) {
     console.error("Clothing image analysis failed:", error);
@@ -192,8 +268,8 @@ export async function generateTryOnWithOpenAI(
 
     const imageFiles = [personImageFile, clothingImageFile];
 
-
-    const prompt = "Create a virtual try-on image by combining the provided person image (the first image) with the clothing item (second image). Ensure the clothing fits naturally on the person, maintaining realistic proportions and lighting. The final image should look like the person is wearing the clothing item in a natural pose.";
+    const prompt =
+      "Create a virtual try-on image by combining the provided person image (the first image) with the clothing item (second image). Ensure the clothing fits naturally on the person, maintaining realistic proportions and lighting. The final image should look like the person is wearing the clothing item in a natural pose.";
     const editResponse = await openai.images.edit({
       model: "gpt-image-1",
       image: imageFiles,
@@ -202,11 +278,13 @@ export async function generateTryOnWithOpenAI(
       size: "1024x1024",
     });
 
+    console.log("OpenAI edit response:", editResponse);
+
     if (!editResponse.data || editResponse.data.length === 0) {
       throw new Error("No images returned from OpenAI edit");
     }
 
-    const generatedImageUrl = editResponse.data[0]?.url;
+    const generatedImageUrl = editResponse.data[0]?.b64_json;
 
     if (!generatedImageUrl) {
       throw new Error("No image generated from OpenAI edit");
@@ -256,7 +334,7 @@ export async function generateTryOnWithFalAI(
       credentials: process.env.FAL_KEY,
     });
 
-    const result = await fal.subscribe("fal-ai/fashn/tryon/v1.6", {
+  const result: any = await fal.subscribe("fal-ai/fashn/tryon/v1.6", {
       input: {
         model_image: personImageDataURL,
         garment_image: clothingImageDataURL,
@@ -278,6 +356,7 @@ export async function generateTryOnWithFalAI(
       imageUrl: generatedImageUrl,
       modelUsed: "fal-ai/fashn/tryon/v1.6",
       provider: "Fal AI",
+  prompt: undefined,
       method: "virtual-tryon",
     };
   } catch (error) {
@@ -359,8 +438,7 @@ export async function generateTryOnImage(formData: FormData) {
 // Helper function to extract values from text
 function extractValue(
   text: string,
-  options: string[],
-  defaultValue: string
+  options: string[]
 ): string {
   const lowerText = text.toLowerCase();
   for (const option of options) {
@@ -368,5 +446,78 @@ function extractValue(
       return option.charAt(0).toUpperCase() + option.slice(1);
     }
   }
-  return defaultValue;
+  return "Unknown";
+}
+
+// Extract age range patterns like "25-34", "20 to 30", or phrases like "mid 20s"
+function extractAgeRange(text: string): string {
+  const t = text.toLowerCase();
+  const range = t.match(/(\d{2})\s*(?:-|to)\s*(\d{2})/);
+  if (range) return `${range[1]}-${range[2]}`;
+  const approx = t.match(/(?:early|mid|late)\s*(\d{2})s/);
+  if (approx) {
+    const base = parseInt(approx[1], 10);
+    if (t.includes("early")) return `${base}-${base + 3}`;
+    if (t.includes("mid")) return `${base + 2}-${base + 7}`;
+    if (t.includes("late")) return `${base + 6}-${base + 9}`;
+  }
+  const single = t.match(/age\s*(\d{2})/);
+  if (single) {
+    const a = parseInt(single[1], 10);
+    return `${a - 2}-${a + 2}`;
+  }
+  return "Unknown";
+}
+
+// Extract height like "170 cm", "1.75 m", "5'9\""
+function extractHeight(text: string): string {
+  const t = text.toLowerCase();
+  const cm = t.match(/(\d{2,3})\s*cm/);
+  if (cm) return `${cm[1]}cm`;
+  const m = t.match(/(\d(?:\.\d{1,2})?)\s*m/);
+  if (m) return `${Math.round(parseFloat(m[1]) * 100)}cm`;
+  const ftIn = t.match(/(\d)'\s*(\d{1,2})(?:"|”)?/);
+  if (ftIn) {
+    const ft = parseInt(ftIn[1], 10);
+    const inch = parseInt(ftIn[2], 10);
+    const total = Math.round((ft * 12 + inch) * 2.54);
+    return `${total}cm`;
+  }
+  return "Unknown";
+}
+
+// Extract measurement for a named body part like chest/waist/hips/shoulders
+function extractMeasurement(text: string, key: string): string {
+  const t = text.toLowerCase();
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`${escapedKey}[^\\n\\r:]*?:?\\s*(\\d{2,3})\\s*(?:cm|centimeters|centimetres)`, "i");
+  const m = t.match(re);
+  if (m) return `${m[1]}cm`;
+  return "Unknown";
+}
+
+// Extract up to two color words
+function extractColors(text: string): string[] {
+  const colorList = [
+    "black", "white", "gray", "grey", "red", "blue", "green", "yellow", "orange", "purple", "pink", "brown", "beige", "tan", "navy", "teal", "maroon", "olive", "gold", "silver"
+  ];
+  const lower = text.toLowerCase();
+  const found: string[] = [];
+  for (const c of colorList) {
+    if (lower.includes(c)) found.push(c.charAt(0).toUpperCase() + c.slice(1));
+    if (found.length === 2) break;
+  }
+  return found;
+}
+
+// Extract confidence percentage like "85%" or statements like "confidence: 0.82"
+function extractConfidence(text: string): string {
+  const percent = text.match(/(\d{2,3})%/);
+  if (percent) return `${Math.min(100, Math.max(0, parseInt(percent[1], 10)))}%`;
+  const decimal = text.match(/confidence[^\d]*(0?\.\d{1,2}|1(?:\.0+)?)|confidence[^\d]*(\d{1,3})/i);
+  if (decimal) {
+    const val = decimal[1] ? parseFloat(decimal[1]) * 100 : parseFloat(decimal[2]);
+    if (!isNaN(val)) return `${Math.min(100, Math.max(0, Math.round(val)))}%`;
+  }
+  return "Unknown";
 }
