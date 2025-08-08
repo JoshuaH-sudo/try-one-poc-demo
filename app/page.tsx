@@ -84,10 +84,39 @@ export default function VirtualTryOnPage() {
       }
     })
 
+    const isFal = selectedModel === 'fal-ai'
+    const limits = {
+      personMax: 1, // both models support only 1 person image in the UI
+      clothingMax: isFal ? 1 : Number.POSITIVE_INFINITY,
+    }
+
     if (type === 'person') {
-      setPersonImages(prev => [...prev, ...newImages])
+      setPersonImages(prev => {
+        const allowed = Math.max(0, limits.personMax - prev.length)
+        const next = allowed > 0 ? [...prev, ...newImages.slice(0, allowed)] : prev
+        if (newImages.length > allowed) {
+          toast({
+            title: 'Limit reached',
+            description: 'Only 1 person image is supported for this model.',
+            variant: 'destructive'
+          })
+        }
+        return next
+      })
     } else {
-      setClothingImages(prev => [...prev, ...newImages])
+      setClothingImages(prev => {
+        const allowed = Math.max(0, limits.clothingMax - prev.length)
+        const next = allowed > 0 ? [...prev, ...newImages.slice(0, allowed)] : prev
+        if (newImages.length > allowed) {
+          toast({
+            title: 'Limit reached',
+            description: isFal
+              ? 'Fal AI supports only 1 clothing image.'
+              : 'Some images were ignored due to reaching the UI limit.',
+          })
+        }
+        return next
+      })
     }
 
     toast({
@@ -333,9 +362,18 @@ export default function VirtualTryOnPage() {
                           {getModelInfo(selectedModel).badge}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-600">
-                        {getModelInfo(selectedModel).description}
-                      </p>
+                      <div className="space-y-1 text-xs text-gray-600">
+                        <p>{getModelInfo(selectedModel).description}</p>
+                        {selectedModel === 'fal-ai' ? (
+                          <p className="italic">
+                            Limitation: 1 person image and 1 clothing image. Use portrait orientation for best results.
+                          </p>
+                        ) : (
+                          <p className="italic">
+                            Limitation: 1 person image and multiple clothing images allowed. Use portrait orientation for best results.
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -360,8 +398,9 @@ export default function VirtualTryOnPage() {
                           Upload Your Photos
                         </CardTitle>
                         <CardDescription>
-                          Upload clear, full-body photos with good lighting for the best try-on results. 
-                          The person should be standing straight and facing forward.
+                          Upload clear, full-body photos with good lighting for the best try-on results. The person should be standing straight and facing forward.
+                          <br />
+                          <span className="text-xs text-gray-500">Only 1 person image is supported. Portrait orientation recommended.</span>
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -377,7 +416,7 @@ export default function VirtualTryOnPage() {
                             <Input
                               id="person-upload"
                               type="file"
-                              multiple
+                              multiple={false}
                               accept="image/*"
                               className="hidden"
                               onChange={(e) => handleImageUpload(e.target.files, 'person')}
@@ -392,8 +431,8 @@ export default function VirtualTryOnPage() {
                                     src={img.preview || "/placeholder.svg"}
                                     alt="Person"
                                     width={200}
-                                    height={200}
-                                    className="w-full h-32 object-cover rounded-lg"
+                                    height={300}
+                                    className="w-full aspect-[2/3] object-cover rounded-lg"
                                   />
                                   <Button
                                     size="sm"
@@ -420,10 +459,10 @@ export default function VirtualTryOnPage() {
                           Upload Clothing Items
                         </CardTitle>
                         <CardDescription>
-                          Upload clear photos of clothing items on a plain background. 
+                          Upload clear photos of clothing items on a plain background.
                           {selectedModel === 'fal-ai' 
-                            ? 'Flat lay or mannequin photos work best for accurate try-on results.'
-                            : 'Clear product photos help gpt-image-1 understand the garment details better.'
+                            ? ' Only 1 clothing image is supported with Fal AI.'
+                            : ' Multiple clothing images are supported with OpenAI.'
                           }
                         </CardDescription>
                       </CardHeader>
@@ -440,7 +479,7 @@ export default function VirtualTryOnPage() {
                             <Input
                               id="clothing-upload"
                               type="file"
-                              multiple
+                              multiple={selectedModel !== 'fal-ai'}
                               accept="image/*"
                               className="hidden"
                               onChange={(e) => handleImageUpload(e.target.files, 'clothing')}
@@ -455,8 +494,8 @@ export default function VirtualTryOnPage() {
                                     src={img.preview || "/placeholder.svg"}
                                     alt="Clothing"
                                     width={200}
-                                    height={200}
-                                    className="w-full h-32 object-cover rounded-lg"
+                                    height={300}
+                                    className="w-full aspect-[2/3] object-cover rounded-lg"
                                   />
                                   <Button
                                     size="sm"

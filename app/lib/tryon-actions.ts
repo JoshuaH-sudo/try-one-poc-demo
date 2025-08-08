@@ -157,15 +157,20 @@ export async function generateTryOnImage(formData: FormData) {
 
     const startTime = Date.now();
 
+    // For Fal AI, only 1 person image and 1 clothing image are supported
+    const finalPersonImages =
+      selectedModel === "fal-ai" ? personImages.slice(0, 1) : personImages
+    const finalClothingImages =
+      selectedModel === "fal-ai" ? clothingImages.slice(0, 1) : clothingImages
+
     // Analyze images and generate try-on in parallel
-    const [personDetails, clothingDetails, generationResult] =
-      await Promise.all([
-        analyzePersonImage(personImages[0]),
-        analyzeClothingImage(clothingImages[0]),
-        selectedModel === "fal-ai"
-          ? generateTryOnWithFalAI(personImages, clothingImages)
-          : generateTryOnWithOpenAI(personImages, clothingImages),
-      ]);
+    const [personDetails, clothingDetails, generationResult] = await Promise.all([
+      analyzePersonImage(finalPersonImages[0]),
+      analyzeClothingImage(finalClothingImages[0]),
+      selectedModel === "fal-ai"
+        ? generateTryOnWithFalAI(finalPersonImages, finalClothingImages)
+        : generateTryOnWithOpenAI(finalPersonImages, finalClothingImages),
+    ]);
 
     const processingTime = ((Date.now() - startTime) / 1000).toFixed(1) + "s";
 
