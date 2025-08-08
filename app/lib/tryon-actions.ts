@@ -7,10 +7,10 @@ if (!process.env.OPENAI_API_KEY) {
   throw new Error("OPENAI_API_KEY not configured");
 }
 
-// Generate try-on image using OpenAI image.edit()
+// Generate try-on image using OpenAI image.edit() with multiple images
 export async function generateTryOnWithOpenAI(
-  personImageFile: File,
-  clothingImageFile: File
+  personImageFiles: File[],
+  clothingImageFiles: File[]
 ) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY not configured");
@@ -19,10 +19,10 @@ export async function generateTryOnWithOpenAI(
   try {
     console.log("Starting OpenAI try-on generation...");
 
-    const imageFiles = [personImageFile, clothingImageFile];
+  const imageFiles = [...personImageFiles, ...clothingImageFiles];
 
     const prompt =
-      "Create a virtual try-on image by combining the provided person image (the first image) with the clothing item (second image). Ensure the clothing fits naturally on the person, maintaining realistic proportions and lighting. The final image should look like the person is wearing the clothing item in a natural pose.";
+      `Create a virtual try-on image by combining the provided person image(s) (first ${personImageFiles.length}) with the clothing item image(s) (next ${clothingImageFiles.length}). Ensure the clothing fits naturally on the person, maintaining realistic proportions and lighting. The final image should look like the person is wearing the clothing item in a natural pose.`;
     const editResponse = await openai.images.edit({
       model: "gpt-image-1",
       image: imageFiles,
@@ -61,10 +61,10 @@ export async function generateTryOnWithOpenAI(
   }
 }
 
-// Generate try-on image using Fal AI
+// Generate try-on image using Fal AI (accepts multiple but uses the first of each)
 export async function generateTryOnWithFalAI(
-  personImageFile: File,
-  clothingImageFile: File
+  personImageFiles: File[],
+  clothingImageFiles: File[]
 ) {
   if (!process.env.FAL_KEY) {
     throw new Error("FAL_KEY not configured");
@@ -74,9 +74,11 @@ export async function generateTryOnWithFalAI(
     console.log("Starting Fal AI try-on generation...");
 
     // Convert images to data URLs
+    const personFile = personImageFiles[0];
+    const clothingFile = clothingImageFiles[0];
     const [personImageDataURL, clothingImageDataURL] = await Promise.all([
-      fileToDataURL(personImageFile),
-      fileToDataURL(clothingImageFile),
+      fileToDataURL(personFile),
+      fileToDataURL(clothingFile),
     ]);
 
     // Import Fal AI dynamically
@@ -161,8 +163,8 @@ export async function generateTryOnImage(formData: FormData) {
         analyzePersonImage(personImages[0]),
         analyzeClothingImage(clothingImages[0]),
         selectedModel === "fal-ai"
-          ? generateTryOnWithFalAI(personImages[0], clothingImages[0])
-          : generateTryOnWithOpenAI(personImages[0], clothingImages[0]),
+          ? generateTryOnWithFalAI(personImages, clothingImages)
+          : generateTryOnWithOpenAI(personImages, clothingImages),
       ]);
 
     const processingTime = ((Date.now() - startTime) / 1000).toFixed(1) + "s";
