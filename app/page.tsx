@@ -12,6 +12,7 @@ import TryOnPreview from '@/components/TryOnPreview'
 import { useToast } from '@/hooks/use-toast'
 import Image from 'next/image'
 import { generateTryOnImage } from './lib/tryon-actions'
+import { compressImage } from './lib/utils'
 import { useRouter } from 'next/navigation'
 
 interface UploadedImage {
@@ -55,6 +56,8 @@ interface GeneratedResult {
   prompt?: string
   method?: string
 }
+
+// compressImage now imported from ./lib/utils
 
 export default function VirtualTryOnPage() {
   const router = useRouter()
@@ -164,15 +167,29 @@ export default function VirtualTryOnPage() {
       // Add model selection
       formData.append('selectedModel', selectedModel)
       
-      // Add person images
-      personImages.forEach((img, index) => {
-        formData.append(`personImage_${index}`, img.file)
-      })
-      
-      // Add clothing images
-      clothingImages.forEach((img, index) => {
-        formData.append(`clothingImage_${index}`, img.file)
-      })
+      const isFal = selectedModel === 'fal-ai'
+      const personToSend = personImages.slice(0, 1) // frontend enforces 1 person image
+      const clothingToSend = isFal ? clothingImages.slice(0, 1) : clothingImages
+
+      // Compress and append person image(s)
+      for (let i = 0; i < personToSend.length; i++) {
+        const compressed = await compressImage(personToSend[i].file, {
+          maxWidth: 1024,
+          maxHeight: 1536,
+          quality: 0.8,
+        })
+        formData.append(`personImage_${i}`, compressed)
+      }
+
+      // Compress and append clothing image(s)
+      for (let i = 0; i < clothingToSend.length; i++) {
+        const compressed = await compressImage(clothingToSend[i].file, {
+          maxWidth: 1024,
+          maxHeight: 1536,
+          quality: 0.8,
+        })
+        formData.append(`clothingImage_${i}`, compressed)
+      }
 
       console.log('Calling server action...')
       
