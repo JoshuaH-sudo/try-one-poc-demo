@@ -16,4 +16,3 @@ export async function fileToDataURL(file: File): Promise<string> {
     throw new Error("Failed to process image file");
   }
 }
-
