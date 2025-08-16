@@ -47,34 +47,45 @@ export async function POST(request: NextRequest) {
 
     const variations = [];
 
-    // Generate 2 front variations using the uploaded front drawing
-    for (let i = 1; i <= 2; i++) {
-      console.log(`Generating front variation ${i}`);
-      try {
-        const frontResponse = await openai.images.edit({
-          model: "gpt-image-1",
-          image: frontDrawing,
-          prompt: basePrompt,
-          size: "1024x1024",
-          n: 2,
+    // Generate front variations using the uploaded front drawing in a single request
+    console.log("Generating front variations");
+    try {
+      const frontResponse = await openai.images.edit({
+        model: "gpt-image-1",
+        image: frontDrawing,
+        prompt: basePrompt,
+        size: "1024x1024",
+        n: 2, // Generate 2 variations in a single request
+      });
+
+      console.log("OpenAI front response:", { frontResponse });
+
+      if (!frontResponse.data || frontResponse.data.length === 0) {
+        throw new Error("No response from OpenAI");
+      }
+
+      // Process all images returned in the response
+      frontResponse.data.forEach((image, index) => {
+        const generatedImageUrl = image.b64_json;
+        const outputFormat = frontResponse.output_format;
+
+        if (!generatedImageUrl) {
+          console.warn(`No image data for front variation ${index + 1}`);
+          return;
+        }
+
+        console.log(`Front variation ${index + 1} generated successfully`);
+        variations.push({
+          id: `front_${index + 1}`,
+          imageUrl: `data:image/${outputFormat};base64,${generatedImageUrl}`,
+          type: "front" as const,
+          description: `Front design variation ${index + 1}`,
         });
-
-        if (!frontResponse.data) {
-          throw new Error("No response from OpenAI");
-        }
-
-        if (frontResponse.data[0]?.url) {
-          console.log(`Front variation ${i} generated successfully`);
-          variations.push({
-            id: `front_${i}`,
-            imageUrl: frontResponse.data[0].url,
-            type: "front" as const,
-            description: `Front design variation ${i}`,
-          });
-        }
-      } catch (error) {
-        console.error(`Error generating front variation ${i}:`, error);
-        // Fallback to placeholder
+      });
+    } catch (error) {
+      console.error("Error generating front variations:", error);
+      // Add fallback placeholders for both expected variations
+      for (let i = 1; i <= 2; i++) {
         variations.push({
           id: `front_${i}`,
           imageUrl: `/placeholder.svg?height=600&width=400&query=dress_design_variation_${i}_${color.replace(
@@ -92,32 +103,43 @@ export async function POST(request: NextRequest) {
       console.log("Generating back variations");
       const backBasePrompt = `Transform this dress back design sketch into a professional fashion rendering. Apply the following specifications: ${description}. Use primary color: ${color}. Create a high-quality back view fashion illustration with detailed construction, closure details, and professional styling. Maintain the original back design structure while enhancing with realistic details. Create two variations of the design.`;
 
-      for (let i = 1; i <= 2; i++) {
-        try {
-          const backResponse = await openai.images.edit({
-            model: "gpt-image-1",
-            image: backDrawing,
-            prompt: backBasePrompt,
-            size: "1024x1024",
-            n: 2,
+      try {
+        const backResponse = await openai.images.edit({
+          model: "gpt-image-1",
+          image: backDrawing,
+          prompt: backBasePrompt,
+          size: "1024x1024",
+          n: 2, // Generate 2 variations in a single request
+        });
+
+        console.log("OpenAI back response:", { backResponse });
+
+        if (!backResponse.data || backResponse.data.length === 0) {
+          throw new Error("No response from OpenAI");
+        }
+
+        // Process all images returned in the response
+        backResponse.data.forEach((image, index) => {
+          const generatedImageUrl = image.b64_json;
+          const outputFormat = backResponse.output_format;
+
+          if (!generatedImageUrl) {
+            console.warn(`No image data for back variation ${index + 1}`);
+            return;
+          }
+
+          console.log(`Back variation ${index + 1} generated successfully`);
+          variations.push({
+            id: `back_${index + 1}`,
+            imageUrl: `data:image/${outputFormat};base64,${generatedImageUrl}`,
+            type: "back" as const,
+            description: `Back design variation ${index + 1}`,
           });
-
-          if (!backResponse.data) {
-            throw new Error("No response from OpenAI");
-          }
-
-          if (backResponse.data[0]?.url) {
-            variations.push({
-              id: `back_${i}`,
-              imageUrl: backResponse.data[0].url,
-              type: "back" as const,
-              description: `Back design variation ${i}`,
-            });
-            console.log(`Back variation ${i} generated successfully`);
-          }
-        } catch (error) {
-          console.error(`Error generating back variation ${i}:`, error);
-          // Fallback to placeholder
+        });
+      } catch (error) {
+        console.error("Error generating back variations:", error);
+        // Add fallback placeholders for both expected variations
+        for (let i = 1; i <= 2; i++) {
           variations.push({
             id: `back_${i}`,
             imageUrl: `/placeholder.svg?height=600&width=400&query=back_design_variation_${i}_${color.replace(
