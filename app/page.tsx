@@ -9,10 +9,10 @@ import { ProgressStepper } from "./components/ProgressStepper"
 import { DesignStep } from "./components/DesignStep"
 import { TryOnStep } from "./components/TryOnStep"
 import { OrderStep } from "./components/OrderStep"
-import type { FormData } from "./utils/types"
+import type { FormValues } from "./utils/types"
 import { saveFormData, loadFormData, saveCurrentStep, loadCurrentStep, clearAllData } from "./utils/localStorage"
 
-const defaultValues: FormData = {
+const defaultValues: FormValues = {
   frontDrawing: null,
   backDrawing: null,
   designDescription: "",
@@ -38,7 +38,7 @@ export default function VirtualTryOnPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const { toast } = useToast()
 
-  const form = useForm<FormData>({
+  const form = useForm<FormValues>({
     defaultValues,
   })
 

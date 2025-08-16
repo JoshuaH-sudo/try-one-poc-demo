@@ -26,7 +26,7 @@ export interface TailorForm {
   additionalNotes: string
 }
 
-export interface FormData {
+export interface FormValues {
   // Design step
   frontDrawing: UploadedImage | null
   backDrawing: UploadedImage | null

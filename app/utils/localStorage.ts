@@ -1,4 +1,4 @@
-import type { FormData } from "./types"
+import type { FormValues } from "./types"
 
 const STORAGE_KEYS = {
   FORM_DATA: "dress-studio-form-data",
@@ -44,7 +44,7 @@ export const createFileFromBase64 = (base64: string, filename: string): File => 
   return new File([u8arr], filename, { type: mime })
 }
 
-export const saveFormData = async (data: FormData) => {
+export const saveFormData = async (data: FormValues) => {
   const serializedData = {
     ...data,
     frontDrawing: data.frontDrawing
@@ -69,11 +69,11 @@ export const saveFormData = async (data: FormData) => {
   saveToStorage(STORAGE_KEYS.FORM_DATA, serializedData)
 }
 
-export const loadFormData = (): Partial<FormData> => {
+export const loadFormData = (): Partial<FormValues> => {
   const savedData = loadFromStorage(STORAGE_KEYS.FORM_DATA)
   if (!savedData) return {}
 
-  const restoredData: Partial<FormData> = { ...savedData }
+  const restoredData: Partial<FormValues> = { ...savedData }
 
   // Restore image files from base64
   if (savedData.frontDrawing?.fileData) {

@@ -10,11 +10,11 @@ import { Upload, Palette, Loader2, Sparkles } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
 import type { UseFormReturn } from "react-hook-form"
-import { FormData } from "../utils/types"
+import { FormValues } from "../utils/types"
 import { handleImageUpload, removeImage, compressImage } from "../utils/imageUtils"
 
 interface DesignStepProps {
-  form: UseFormReturn<FormData>
+  form: UseFormReturn<FormValues>
   onNext: () => void
 }
 
