@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import OpenAI from "openai"
 
+export const runtime = "nodejs"
+
 const DesignVariationsSchema = z.object({
   variations: z.array(
     z.object({
@@ -15,6 +17,10 @@ const DesignVariationsSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ success: false, error: "OpenAI API key not configured" }, { status: 500 })
+    }
+
     const formData = await request.formData()
     const frontDrawing = formData.get("frontDrawing") as File
     const backDrawing = formData.get("backDrawing") as File | null
