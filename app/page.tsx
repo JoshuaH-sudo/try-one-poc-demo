@@ -1,32 +1,46 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { Upload, User, Shirt, Palette, Loader2, Sparkles, Send } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import Image from "next/image"
-import { compressImage } from "./lib/utils"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Upload,
+  User,
+  Shirt,
+  Palette,
+  Loader2,
+  Sparkles,
+  Send,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
+import { compressImage } from "./lib/utils";
 
 interface UploadedImage {
-  file: File
-  preview: string
-  id: string
+  file: File;
+  preview: string;
+  id: string;
 }
 
 interface DesignVariation {
-  id: string
-  imageUrl: string
-  type: "front" | "back"
+  id: string;
+  imageUrl: string;
+  type: "front" | "back";
 }
 
 interface TryOnResult {
-  imageUrl: string
-  timestamp: string
+  imageUrl: string;
+  timestamp: string;
 }
 
 const STORAGE_KEYS = {
@@ -34,27 +48,31 @@ const STORAGE_KEYS = {
   TRYON_STATE: "dress-studio-tryon-state",
   TAILOR_FORM: "dress-studio-tailor-form",
   CURRENT_TAB: "dress-studio-current-tab",
-}
+};
 
 export default function VirtualTryOnPage() {
   // Design Dress Journey State
-  const [frontDrawing, setFrontDrawing] = useState<UploadedImage | null>(null)
-  const [backDrawing, setBackDrawing] = useState<UploadedImage | null>(null)
-  const [designDescription, setDesignDescription] = useState("")
-  const [selectedColor, setSelectedColor] = useState("#000000")
-  const [designVariations, setDesignVariations] = useState<DesignVariation[]>([])
-  const [selectedFront, setSelectedFront] = useState<string | null>(null)
-  const [selectedBack, setSelectedBack] = useState<string | null>(null)
-  const [isGeneratingDesign, setIsGeneratingDesign] = useState(false)
+  const [frontDrawing, setFrontDrawing] = useState<UploadedImage | null>(null);
+  const [backDrawing, setBackDrawing] = useState<UploadedImage | null>(null);
+  const [designDescription, setDesignDescription] = useState("");
+  const [selectedColor, setSelectedColor] = useState("#000000");
+  const [designVariations, setDesignVariations] = useState<DesignVariation[]>(
+    []
+  );
+  const [selectedFront, setSelectedFront] = useState<string | null>(null);
+  const [selectedBack, setSelectedBack] = useState<string | null>(null);
+  const [isGeneratingDesign, setIsGeneratingDesign] = useState(false);
 
   // Try On Journey State
-  const [personImage, setPersonImage] = useState<UploadedImage | null>(null)
-  const [clothingImage, setClothingImage] = useState<UploadedImage | null>(null)
-  const [tryOnResult, setTryOnResult] = useState<TryOnResult | null>(null)
-  const [isGeneratingTryOn, setIsGeneratingTryOn] = useState(false)
+  const [personImage, setPersonImage] = useState<UploadedImage | null>(null);
+  const [clothingImage, setClothingImage] = useState<UploadedImage | null>(
+    null
+  );
+  const [tryOnResult, setTryOnResult] = useState<TryOnResult | null>(null);
+  const [isGeneratingTryOn, setIsGeneratingTryOn] = useState(false);
 
   // Tailor Form State
-  const [showTailorForm, setShowTailorForm] = useState(false)
+  const [showTailorForm, setShowTailorForm] = useState(false);
   const [tailorForm, setTailorForm] = useState({
     fullName: "",
     contact: "",
@@ -64,51 +82,51 @@ export default function VirtualTryOnPage() {
     height: "",
     weight: "",
     additionalNotes: "",
-  })
-  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false)
+  });
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
-  const [currentTab, setCurrentTab] = useState("design")
+  const [currentTab, setCurrentTab] = useState("design");
 
-  const { toast } = useToast()
+  const { toast } = useToast();
 
   const saveToStorage = (key: string, data: any) => {
     try {
-      localStorage.setItem(key, JSON.stringify(data))
+      localStorage.setItem(key, JSON.stringify(data));
     } catch (error) {
-      console.error("Failed to save to localStorage:", error)
+      console.error("Failed to save to localStorage:", error);
     }
-  }
+  };
 
   const loadFromStorage = (key: string) => {
     try {
-      const item = localStorage.getItem(key)
-      return item ? JSON.parse(item) : null
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : null;
     } catch (error) {
-      console.error("Failed to load from localStorage:", error)
-      return null
+      console.error("Failed to load from localStorage:", error);
+      return null;
     }
-  }
+  };
 
   const convertFileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
-  }
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
   const createFileFromBase64 = (base64: string, filename: string): File => {
-    const arr = base64.split(",")
-    const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg"
-    const bstr = atob(arr[1])
-    let n = bstr.length
-    const u8arr = new Uint8Array(n)
+    const arr = base64.split(",");
+    const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
     while (n--) {
-      u8arr[n] = bstr.charCodeAt(n)
+      u8arr[n] = bstr.charCodeAt(n);
     }
-    return new File([u8arr], filename, { type: mime })
-  }
+    return new File([u8arr], filename, { type: mime });
+  };
 
   const saveDesignState = async () => {
     const designState = {
@@ -129,9 +147,9 @@ export default function VirtualTryOnPage() {
       designVariations,
       selectedFront,
       selectedBack,
-    }
-    saveToStorage(STORAGE_KEYS.DESIGN_STATE, designState)
-  }
+    };
+    saveToStorage(STORAGE_KEYS.DESIGN_STATE, designState);
+  };
 
   const saveTryOnState = async () => {
     const tryOnState = {
@@ -148,90 +166,102 @@ export default function VirtualTryOnPage() {
           }
         : null,
       tryOnResult,
-    }
-    saveToStorage(STORAGE_KEYS.TRYON_STATE, tryOnState)
-  }
+    };
+    saveToStorage(STORAGE_KEYS.TRYON_STATE, tryOnState);
+  };
 
   const restoreState = () => {
     // Restore current tab
-    const savedTab = loadFromStorage(STORAGE_KEYS.CURRENT_TAB)
+    const savedTab = loadFromStorage(STORAGE_KEYS.CURRENT_TAB);
     if (savedTab) {
-      setCurrentTab(savedTab)
+      setCurrentTab(savedTab);
     }
 
     // Restore design state
-    const designState = loadFromStorage(STORAGE_KEYS.DESIGN_STATE)
+    const designState = loadFromStorage(STORAGE_KEYS.DESIGN_STATE);
     if (designState) {
       if (designState.frontDrawing) {
-        const file = createFileFromBase64(designState.frontDrawing.fileData, "front-drawing.jpg")
+        const file = createFileFromBase64(
+          designState.frontDrawing.fileData,
+          "front-drawing.jpg"
+        );
         setFrontDrawing({
           file,
           preview: designState.frontDrawing.preview,
           id: designState.frontDrawing.id,
-        })
+        });
       }
       if (designState.backDrawing) {
-        const file = createFileFromBase64(designState.backDrawing.fileData, "back-drawing.jpg")
+        const file = createFileFromBase64(
+          designState.backDrawing.fileData,
+          "back-drawing.jpg"
+        );
         setBackDrawing({
           file,
           preview: designState.backDrawing.preview,
           id: designState.backDrawing.id,
-        })
+        });
       }
-      setDesignDescription(designState.designDescription || "")
-      setSelectedColor(designState.selectedColor || "#000000")
-      setDesignVariations(designState.designVariations || [])
-      setSelectedFront(designState.selectedFront || null)
-      setSelectedBack(designState.selectedBack || null)
+      setDesignDescription(designState.designDescription || "");
+      setSelectedColor(designState.selectedColor || "#000000");
+      setDesignVariations(designState.designVariations || []);
+      setSelectedFront(designState.selectedFront || null);
+      setSelectedBack(designState.selectedBack || null);
     }
 
     // Restore try-on state
-    const tryOnState = loadFromStorage(STORAGE_KEYS.TRYON_STATE)
+    const tryOnState = loadFromStorage(STORAGE_KEYS.TRYON_STATE);
     if (tryOnState) {
       if (tryOnState.personImage) {
-        const file = createFileFromBase64(tryOnState.personImage.fileData, "person.jpg")
+        const file = createFileFromBase64(
+          tryOnState.personImage.fileData,
+          "person.jpg"
+        );
         setPersonImage({
           file,
           preview: tryOnState.personImage.preview,
           id: tryOnState.personImage.id,
-        })
+        });
       }
       if (tryOnState.clothingImage) {
-        const file = createFileFromBase64(tryOnState.clothingImage.fileData, "clothing.jpg")
+        const file = createFileFromBase64(
+          tryOnState.clothingImage.fileData,
+          "clothing.jpg"
+        );
         setClothingImage({
           file,
           preview: tryOnState.clothingImage.preview,
           id: tryOnState.clothingImage.id,
-        })
+        });
       }
-      setTryOnResult(tryOnState.tryOnResult || null)
+      setTryOnResult(tryOnState.tryOnResult || null);
     }
 
     // Restore tailor form
-    const savedTailorForm = loadFromStorage(STORAGE_KEYS.TAILOR_FORM)
+    const savedTailorForm = loadFromStorage(STORAGE_KEYS.TAILOR_FORM);
     if (savedTailorForm) {
-      setTailorForm(savedTailorForm)
+      setTailorForm(savedTailorForm);
     }
-  }
+  };
 
   const clearAllData = () => {
     // Clear localStorage
     Object.values(STORAGE_KEYS).forEach((key) => {
-      localStorage.removeItem(key)
-    })
+      localStorage.removeItem(key);
+    });
 
     // Reset all state
-    setFrontDrawing(null)
-    setBackDrawing(null)
-    setDesignDescription("")
-    setSelectedColor("#000000")
-    setDesignVariations([])
-    setSelectedFront(null)
-    setSelectedBack(null)
-    setPersonImage(null)
-    setClothingImage(null)
-    setTryOnResult(null)
-    setShowTailorForm(false)
+    setFrontDrawing(null);
+    setBackDrawing(null);
+    setDesignDescription("");
+    setSelectedColor("#000000");
+    setDesignVariations([]);
+    setSelectedFront(null);
+    setSelectedBack(null);
+    setPersonImage(null);
+    setClothingImage(null);
+    setTryOnResult(null);
+    setShowTailorForm(false);
     setTailorForm({
       fullName: "",
       contact: "",
@@ -241,61 +271,80 @@ export default function VirtualTryOnPage() {
       height: "",
       weight: "",
       additionalNotes: "",
-    })
-    setCurrentTab("design")
+    });
+    setCurrentTab("design");
 
     toast({
       title: "Data cleared",
       description: "All stored data has been cleared. Starting fresh!",
-    })
-  }
+    });
+  };
 
   useEffect(() => {
-    restoreState()
-  }, [])
+    restoreState();
+  }, []);
 
   useEffect(() => {
-    if (frontDrawing || backDrawing || designDescription || designVariations.length > 0) {
-      saveDesignState()
+    if (
+      frontDrawing ||
+      backDrawing ||
+      designDescription ||
+      designVariations.length > 0
+    ) {
+      saveDesignState();
     }
-  }, [frontDrawing, backDrawing, designDescription, selectedColor, designVariations, selectedFront, selectedBack])
+  }, [
+    frontDrawing,
+    backDrawing,
+    designDescription,
+    selectedColor,
+    designVariations,
+    selectedFront,
+    selectedBack,
+  ]);
 
   useEffect(() => {
     if (personImage || clothingImage || tryOnResult) {
-      saveTryOnState()
+      saveTryOnState();
     }
-  }, [personImage, clothingImage, tryOnResult])
+  }, [personImage, clothingImage, tryOnResult]);
 
   useEffect(() => {
-    saveToStorage(STORAGE_KEYS.TAILOR_FORM, tailorForm)
-  }, [tailorForm])
+    saveToStorage(STORAGE_KEYS.TAILOR_FORM, tailorForm);
+  }, [tailorForm]);
 
   useEffect(() => {
-    saveToStorage(STORAGE_KEYS.CURRENT_TAB, currentTab)
-  }, [currentTab])
+    saveToStorage(STORAGE_KEYS.CURRENT_TAB, currentTab);
+  }, [currentTab]);
 
-  const handleImageUpload = (files: FileList | null, setter: (img: UploadedImage | null) => void) => {
-    if (!files || files.length === 0) return
+  const handleImageUpload = (
+    files: FileList | null,
+    setter: (img: UploadedImage | null) => void
+  ) => {
+    if (!files || files.length === 0) return;
 
-    const file = files[0]
+    const file = files[0];
     if (file.type.startsWith("image/")) {
-      const preview = URL.createObjectURL(file)
-      const id = Math.random().toString(36).substr(2, 9)
-      setter({ file, preview, id })
+      const preview = URL.createObjectURL(file);
+      const id = Math.random().toString(36).substr(2, 9);
+      setter({ file, preview, id });
 
       toast({
         title: "Image uploaded",
         description: "Image uploaded successfully.",
-      })
+      });
     }
-  }
+  };
 
-  const removeImage = (setter: (img: UploadedImage | null) => void, image: UploadedImage | null) => {
+  const removeImage = (
+    setter: (img: UploadedImage | null) => void,
+    image: UploadedImage | null
+  ) => {
     if (image) {
-      URL.revokeObjectURL(image.preview)
-      setter(null)
+      URL.revokeObjectURL(image.preview);
+      setter(null);
     }
-  }
+  };
 
   const generateDesignVariations = async () => {
     if (!frontDrawing) {
@@ -303,22 +352,22 @@ export default function VirtualTryOnPage() {
         title: "Missing drawing",
         description: "Please upload a front drawing to generate variations.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsGeneratingDesign(true)
+    setIsGeneratingDesign(true);
 
     try {
-      const formData = new FormData()
+      const formData = new FormData();
 
       // Compress and append front drawing
       const compressedFront = await compressImage(frontDrawing.file, {
         maxWidth: 1024,
         maxHeight: 1536,
         quality: 0.8,
-      })
-      formData.append("frontDrawing", compressedFront)
+      });
+      formData.append("frontDrawing", compressedFront);
 
       // Add back drawing if available
       if (backDrawing) {
@@ -326,102 +375,114 @@ export default function VirtualTryOnPage() {
           maxWidth: 1024,
           maxHeight: 1536,
           quality: 0.8,
-        })
-        formData.append("backDrawing", compressedBack)
+        });
+        formData.append("backDrawing", compressedBack);
       }
 
-      formData.append("description", designDescription)
-      formData.append("color", selectedColor)
+      formData.append("description", designDescription);
+      formData.append("color", selectedColor);
 
       const response = await fetch("/api/generate-design", {
         method: "POST",
         body: formData,
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error || "Design generation failed")
+        throw new Error(result.error || "Design generation failed");
       }
 
-      setDesignVariations(result.variations)
+      setDesignVariations(result.variations);
 
       toast({
         title: "Design variations generated!",
         description: "Choose your favorite front and back designs.",
-      })
+      });
     } catch (error) {
-      console.error("Error generating design:", error)
+      console.error("Error generating design:", error);
       toast({
         title: "Generation failed",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsGeneratingDesign(false)
+      setIsGeneratingDesign(false);
     }
-  }
+  };
 
   const generateTryOn = async () => {
-    if (!personImage || !clothingImage) {
+    console.log("Generating try-on...");
+    if (!personImage || !selectedFront) {
       toast({
         title: "Missing images",
         description: "Please upload both person and clothing images.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsGeneratingTryOn(true)
+    setIsGeneratingTryOn(true);
 
     try {
-      const formData = new FormData()
+      const formData = new FormData();
 
       const compressedPerson = await compressImage(personImage.file, {
         maxWidth: 1024,
         maxHeight: 1536,
         quality: 0.8,
-      })
-      formData.append("personImage", compressedPerson)
+      });
+      formData.append("personImage", compressedPerson);
 
-      const compressedClothing = await compressImage(clothingImage.file, {
+      const selectedDesign = designVariations.find(
+        (design) => design.id === selectedFront
+      )!;
+      const imageResponse = await fetch(selectedDesign.imageUrl);
+      const blob = await imageResponse.blob();
+      const designFile = new File([blob], `design-${selectedFront}.jpg`, {
+        type: "image/jpeg",
+      });
+
+      const compressedClothing = await compressImage(designFile, {
         maxWidth: 1024,
         maxHeight: 1536,
         quality: 0.8,
-      })
-      formData.append("clothingImage", compressedClothing)
+      });
+      formData.append("clothingImage", compressedClothing);
 
       const response = await fetch("/api/try-on", {
         method: "POST",
         body: formData,
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error || "Try-on generation failed")
+        throw new Error(result.error || "Try-on generation failed");
       }
 
       setTryOnResult({
         imageUrl: result.imageUrl,
         timestamp: new Date().toISOString(),
-      })
+      });
 
       toast({
         title: "Try-on generated!",
         description: "Your virtual try-on is ready!",
-      })
+      });
     } catch (error) {
-      console.error("Error generating try-on:", error)
+      console.error("Error generating try-on:", error);
       toast({
         title: "Generation failed",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsGeneratingTryOn(false)
+      setIsGeneratingTryOn(false);
     }
-  }
+  };
 
   const submitToTailor = async () => {
     if (!tailorForm.fullName || !tailorForm.contact) {
@@ -429,11 +490,11 @@ export default function VirtualTryOnPage() {
         title: "Missing information",
         description: "Please fill in your name and contact information.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsSubmittingOrder(true)
+    setIsSubmittingOrder(true);
 
     try {
       const orderData = {
@@ -444,7 +505,7 @@ export default function VirtualTryOnPage() {
         },
         tryOnImage: tryOnResult?.imageUrl,
         timestamp: new Date().toISOString(),
-      }
+      };
 
       const response = await fetch("/api/submit-order", {
         method: "POST",
@@ -452,21 +513,21 @@ export default function VirtualTryOnPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(orderData),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error || "Order submission failed")
+        throw new Error(result.error || "Order submission failed");
       }
 
       toast({
         title: "Order submitted!",
         description: `Your order #${result.orderId} has been sent to the tailor.`,
-      })
+      });
 
       // Reset form
-      setShowTailorForm(false)
+      setShowTailorForm(false);
       setTailorForm({
         fullName: "",
         contact: "",
@@ -476,25 +537,30 @@ export default function VirtualTryOnPage() {
         height: "",
         weight: "",
         additionalNotes: "",
-      })
+      });
     } catch (error) {
-      console.error("Error submitting order:", error)
+      console.error("Error submitting order:", error);
       toast({
         title: "Submission failed",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmittingOrder(false)
+      setIsSubmittingOrder(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Custom Dress Studio</h1>
-          <p className="text-lg text-gray-600">Design your dream dress or try on existing designs with AI</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Custom Dress Studio
+          </h1>
+          <p className="text-lg text-gray-600">
+            Design your dream dress or try on existing designs with AI
+          </p>
           <div className="mt-4">
             <Button
               variant="outline"
@@ -507,7 +573,11 @@ export default function VirtualTryOnPage() {
           </div>
         </div>
 
-        <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+        <Tabs
+          value={currentTab}
+          onValueChange={setCurrentTab}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="design" className="flex items-center gap-2">
               <Palette className="w-4 h-4" />
@@ -528,16 +598,22 @@ export default function VirtualTryOnPage() {
                   <CardHeader>
                     <CardTitle>Upload Your Drawings</CardTitle>
                     <CardDescription>
-                      Upload your dress design drawings. Front view is required, back view is optional.
+                      Upload your dress design drawings. Front view is required,
+                      back view is optional.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* Front Drawing Upload */}
                     <div>
-                      <Label className="text-sm font-medium mb-2 block">Front Drawing *</Label>
+                      <Label className="text-sm font-medium mb-2 block">
+                        Front Drawing *
+                      </Label>
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
                         <Upload className="w-6 h-6 mx-auto mb-2 text-gray-400" />
-                        <Label htmlFor="front-upload" className="cursor-pointer">
+                        <Label
+                          htmlFor="front-upload"
+                          className="cursor-pointer"
+                        >
                           <span className="text-sm font-medium text-blue-600 hover:text-blue-500">
                             Click to upload front drawing
                           </span>
@@ -547,7 +623,9 @@ export default function VirtualTryOnPage() {
                           type="file"
                           accept="image/*"
                           className="hidden"
-                          onChange={(e) => handleImageUpload(e.target.files, setFrontDrawing)}
+                          onChange={(e) =>
+                            handleImageUpload(e.target.files, setFrontDrawing)
+                          }
                         />
                       </div>
                       {frontDrawing && (
@@ -563,7 +641,9 @@ export default function VirtualTryOnPage() {
                             size="sm"
                             variant="destructive"
                             className="absolute top-2 right-2"
-                            onClick={() => removeImage(setFrontDrawing, frontDrawing)}
+                            onClick={() =>
+                              removeImage(setFrontDrawing, frontDrawing)
+                            }
                           >
                             ×
                           </Button>
@@ -573,7 +653,9 @@ export default function VirtualTryOnPage() {
 
                     {/* Back Drawing Upload */}
                     <div>
-                      <Label className="text-sm font-medium mb-2 block">Back Drawing (Optional)</Label>
+                      <Label className="text-sm font-medium mb-2 block">
+                        Back Drawing (Optional)
+                      </Label>
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
                         <Upload className="w-6 h-6 mx-auto mb-2 text-gray-400" />
                         <Label htmlFor="back-upload" className="cursor-pointer">
@@ -586,7 +668,9 @@ export default function VirtualTryOnPage() {
                           type="file"
                           accept="image/*"
                           className="hidden"
-                          onChange={(e) => handleImageUpload(e.target.files, setBackDrawing)}
+                          onChange={(e) =>
+                            handleImageUpload(e.target.files, setBackDrawing)
+                          }
                         />
                       </div>
                       {backDrawing && (
@@ -602,7 +686,9 @@ export default function VirtualTryOnPage() {
                             size="sm"
                             variant="destructive"
                             className="absolute top-2 right-2"
-                            onClick={() => removeImage(setBackDrawing, backDrawing)}
+                            onClick={() =>
+                              removeImage(setBackDrawing, backDrawing)
+                            }
                           >
                             ×
                           </Button>
@@ -615,7 +701,9 @@ export default function VirtualTryOnPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Design Details</CardTitle>
-                    <CardDescription>Add additional information about your dress design</CardDescription>
+                    <CardDescription>
+                      Add additional information about your dress design
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
@@ -676,7 +764,9 @@ export default function VirtualTryOnPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Design Variations</CardTitle>
-                    <CardDescription>AI-generated variations of your dress design</CardDescription>
+                    <CardDescription>
+                      AI-generated variations of your dress design
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {designVariations.length > 0 ? (
@@ -691,12 +781,16 @@ export default function VirtualTryOnPage() {
                                 <div
                                   key={variation.id}
                                   className={`relative cursor-pointer rounded-lg border-2 transition-colors ${
-                                    selectedFront === variation.id ? "border-blue-500" : "border-gray-200"
+                                    selectedFront === variation.id
+                                      ? "border-blue-500"
+                                      : "border-gray-200"
                                   }`}
                                   onClick={() => setSelectedFront(variation.id)}
                                 >
                                   <Image
-                                    src={variation.imageUrl || "/placeholder.svg"}
+                                    src={
+                                      variation.imageUrl || "/placeholder.svg"
+                                    }
                                     alt="Front design variation"
                                     width={200}
                                     height={300}
@@ -723,12 +817,18 @@ export default function VirtualTryOnPage() {
                                   <div
                                     key={variation.id}
                                     className={`relative cursor-pointer rounded-lg border-2 transition-colors ${
-                                      selectedBack === variation.id ? "border-blue-500" : "border-gray-200"
+                                      selectedBack === variation.id
+                                        ? "border-blue-500"
+                                        : "border-gray-200"
                                     }`}
-                                    onClick={() => setSelectedBack(variation.id)}
+                                    onClick={() =>
+                                      setSelectedBack(variation.id)
+                                    }
                                   >
                                     <Image
-                                      src={variation.imageUrl || "/placeholder.svg"}
+                                      src={
+                                        variation.imageUrl || "/placeholder.svg"
+                                      }
                                       alt="Back design variation"
                                       width={200}
                                       height={300}
@@ -748,11 +848,16 @@ export default function VirtualTryOnPage() {
                         {/* Try On Section for Design */}
                         {selectedFront && (
                           <div className="border-t pt-6">
-                            <h4 className="font-medium mb-3">Try On Your Design</h4>
+                            <h4 className="font-medium mb-3">
+                              Try On Your Design
+                            </h4>
                             <div className="space-y-4">
                               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
                                 <Upload className="w-6 h-6 mx-auto mb-2 text-gray-400" />
-                                <Label htmlFor="person-design-upload" className="cursor-pointer">
+                                <Label
+                                  htmlFor="person-design-upload"
+                                  className="cursor-pointer"
+                                >
                                   <span className="text-sm font-medium text-blue-600 hover:text-blue-500">
                                     Upload your photo for try-on
                                   </span>
@@ -762,14 +867,21 @@ export default function VirtualTryOnPage() {
                                   type="file"
                                   accept="image/*"
                                   className="hidden"
-                                  onChange={(e) => handleImageUpload(e.target.files, setPersonImage)}
+                                  onChange={(e) =>
+                                    handleImageUpload(
+                                      e.target.files,
+                                      setPersonImage
+                                    )
+                                  }
                                 />
                               </div>
 
                               {personImage && (
                                 <div className="relative">
                                   <Image
-                                    src={personImage.preview || "/placeholder.svg"}
+                                    src={
+                                      personImage.preview || "/placeholder.svg"
+                                    }
                                     alt="Person"
                                     width={200}
                                     height={300}
@@ -779,7 +891,9 @@ export default function VirtualTryOnPage() {
                                     size="sm"
                                     variant="destructive"
                                     className="absolute top-2 right-2"
-                                    onClick={() => removeImage(setPersonImage, personImage)}
+                                    onClick={() =>
+                                      removeImage(setPersonImage, personImage)
+                                    }
                                   >
                                     ×
                                   </Button>
@@ -790,15 +904,12 @@ export default function VirtualTryOnPage() {
                                 <Button
                                   onClick={() => {
                                     // Set clothing image to selected front design for try-on
-                                    const selectedDesign = designVariations.find((v) => v.id === selectedFront)
+                                    const selectedDesign =
+                                      designVariations.find(
+                                        (v) => v.id === selectedFront
+                                      );
                                     if (selectedDesign) {
-                                      // Create a mock clothing image from the selected design
-                                      setClothingImage({
-                                        file: new File([], "design.jpg"),
-                                        preview: selectedDesign.imageUrl,
-                                        id: selectedDesign.id,
-                                      })
-                                      generateTryOn()
+                                      generateTryOn();
                                     }
                                   }}
                                   disabled={isGeneratingTryOn}
@@ -825,8 +936,8 @@ export default function VirtualTryOnPage() {
                       <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                         <Palette className="w-12 h-12 mb-4" />
                         <p className="text-center">
-                          Upload your drawings and click "Generate Design Variations" to see AI-created versions of your
-                          dress!
+                          Upload your drawings and click "Generate Design
+                          Variations" to see AI-created versions of your dress!
                         </p>
                       </div>
                     )}
@@ -848,13 +959,17 @@ export default function VirtualTryOnPage() {
                       Upload Your Photo
                     </CardTitle>
                     <CardDescription>
-                      Upload a clear, full-body photo with good lighting for the best try-on results.
+                      Upload a clear, full-body photo with good lighting for the
+                      best try-on results.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
                       <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                      <Label htmlFor="person-tryon-upload" className="cursor-pointer">
+                      <Label
+                        htmlFor="person-tryon-upload"
+                        className="cursor-pointer"
+                      >
                         <span className="text-sm font-medium text-blue-600 hover:text-blue-500">
                           Click to upload your photo
                         </span>
@@ -864,7 +979,9 @@ export default function VirtualTryOnPage() {
                         type="file"
                         accept="image/*"
                         className="hidden"
-                        onChange={(e) => handleImageUpload(e.target.files, setPersonImage)}
+                        onChange={(e) =>
+                          handleImageUpload(e.target.files, setPersonImage)
+                        }
                       />
                     </div>
 
@@ -881,7 +998,9 @@ export default function VirtualTryOnPage() {
                           size="sm"
                           variant="destructive"
                           className="absolute top-2 right-2"
-                          onClick={() => removeImage(setPersonImage, personImage)}
+                          onClick={() =>
+                            removeImage(setPersonImage, personImage)
+                          }
                         >
                           ×
                         </Button>
@@ -896,12 +1015,17 @@ export default function VirtualTryOnPage() {
                       <Shirt className="w-5 h-5" />
                       Upload Dress Image
                     </CardTitle>
-                    <CardDescription>Upload a clear photo of the dress you want to try on.</CardDescription>
+                    <CardDescription>
+                      Upload a clear photo of the dress you want to try on.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
                       <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                      <Label htmlFor="clothing-tryon-upload" className="cursor-pointer">
+                      <Label
+                        htmlFor="clothing-tryon-upload"
+                        className="cursor-pointer"
+                      >
                         <span className="text-sm font-medium text-blue-600 hover:text-blue-500">
                           Click to upload dress image
                         </span>
@@ -911,7 +1035,9 @@ export default function VirtualTryOnPage() {
                         type="file"
                         accept="image/*"
                         className="hidden"
-                        onChange={(e) => handleImageUpload(e.target.files, setClothingImage)}
+                        onChange={(e) =>
+                          handleImageUpload(e.target.files, setClothingImage)
+                        }
                       />
                     </div>
 
@@ -928,7 +1054,9 @@ export default function VirtualTryOnPage() {
                           size="sm"
                           variant="destructive"
                           className="absolute top-2 right-2"
-                          onClick={() => removeImage(setClothingImage, clothingImage)}
+                          onClick={() =>
+                            removeImage(setClothingImage, clothingImage)
+                          }
                         >
                           ×
                         </Button>
@@ -962,7 +1090,9 @@ export default function VirtualTryOnPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Try-On Result</CardTitle>
-                    <CardDescription>Your AI-generated virtual try-on will appear here</CardDescription>
+                    <CardDescription>
+                      Your AI-generated virtual try-on will appear here
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {tryOnResult ? (
@@ -974,7 +1104,11 @@ export default function VirtualTryOnPage() {
                           height={600}
                           className="w-full aspect-[2/3] object-cover rounded-lg"
                         />
-                        <Button onClick={() => setShowTailorForm(true)} className="w-full" size="lg">
+                        <Button
+                          onClick={() => setShowTailorForm(true)}
+                          className="w-full"
+                          size="lg"
+                        >
                           <Send className="w-4 h-4 mr-2" />
                           Submit to Tailor
                         </Button>
@@ -983,7 +1117,8 @@ export default function VirtualTryOnPage() {
                       <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                         <Sparkles className="w-12 h-12 mb-4" />
                         <p className="text-center">
-                          Upload your photo and a dress image, then click "Generate Try-On" to see the result!
+                          Upload your photo and a dress image, then click
+                          "Generate Try-On" to see the result!
                         </p>
                       </div>
                     )}
@@ -1001,7 +1136,8 @@ export default function VirtualTryOnPage() {
               <CardHeader>
                 <CardTitle>Submit Order to Tailor</CardTitle>
                 <CardDescription>
-                  Please provide your details and measurements for the custom dress order.
+                  Please provide your details and measurements for the custom
+                  dress order.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1011,16 +1147,28 @@ export default function VirtualTryOnPage() {
                     <Input
                       id="fullName"
                       value={tailorForm.fullName}
-                      onChange={(e) => setTailorForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                      onChange={(e) =>
+                        setTailorForm((prev) => ({
+                          ...prev,
+                          fullName: e.target.value,
+                        }))
+                      }
                       placeholder="Enter your full name"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="contact">Contact (WhatsApp/Telegram) *</Label>
+                    <Label htmlFor="contact">
+                      Contact (WhatsApp/Telegram) *
+                    </Label>
                     <Input
                       id="contact"
                       value={tailorForm.contact}
-                      onChange={(e) => setTailorForm((prev) => ({ ...prev, contact: e.target.value }))}
+                      onChange={(e) =>
+                        setTailorForm((prev) => ({
+                          ...prev,
+                          contact: e.target.value,
+                        }))
+                      }
                       placeholder="Phone number"
                     />
                   </div>
@@ -1032,7 +1180,12 @@ export default function VirtualTryOnPage() {
                     <Input
                       id="bust"
                       value={tailorForm.bust}
-                      onChange={(e) => setTailorForm((prev) => ({ ...prev, bust: e.target.value }))}
+                      onChange={(e) =>
+                        setTailorForm((prev) => ({
+                          ...prev,
+                          bust: e.target.value,
+                        }))
+                      }
                       placeholder="e.g. 90"
                     />
                   </div>
@@ -1041,7 +1194,12 @@ export default function VirtualTryOnPage() {
                     <Input
                       id="waist"
                       value={tailorForm.waist}
-                      onChange={(e) => setTailorForm((prev) => ({ ...prev, waist: e.target.value }))}
+                      onChange={(e) =>
+                        setTailorForm((prev) => ({
+                          ...prev,
+                          waist: e.target.value,
+                        }))
+                      }
                       placeholder="e.g. 70"
                     />
                   </div>
@@ -1050,7 +1208,12 @@ export default function VirtualTryOnPage() {
                     <Input
                       id="hips"
                       value={tailorForm.hips}
-                      onChange={(e) => setTailorForm((prev) => ({ ...prev, hips: e.target.value }))}
+                      onChange={(e) =>
+                        setTailorForm((prev) => ({
+                          ...prev,
+                          hips: e.target.value,
+                        }))
+                      }
                       placeholder="e.g. 95"
                     />
                   </div>
@@ -1062,7 +1225,12 @@ export default function VirtualTryOnPage() {
                     <Input
                       id="height"
                       value={tailorForm.height}
-                      onChange={(e) => setTailorForm((prev) => ({ ...prev, height: e.target.value }))}
+                      onChange={(e) =>
+                        setTailorForm((prev) => ({
+                          ...prev,
+                          height: e.target.value,
+                        }))
+                      }
                       placeholder="e.g. 165"
                     />
                   </div>
@@ -1071,7 +1239,12 @@ export default function VirtualTryOnPage() {
                     <Input
                       id="weight"
                       value={tailorForm.weight}
-                      onChange={(e) => setTailorForm((prev) => ({ ...prev, weight: e.target.value }))}
+                      onChange={(e) =>
+                        setTailorForm((prev) => ({
+                          ...prev,
+                          weight: e.target.value,
+                        }))
+                      }
                       placeholder="e.g. 60"
                     />
                   </div>
@@ -1082,17 +1255,30 @@ export default function VirtualTryOnPage() {
                   <Textarea
                     id="additionalNotes"
                     value={tailorForm.additionalNotes}
-                    onChange={(e) => setTailorForm((prev) => ({ ...prev, additionalNotes: e.target.value }))}
+                    onChange={(e) =>
+                      setTailorForm((prev) => ({
+                        ...prev,
+                        additionalNotes: e.target.value,
+                      }))
+                    }
                     placeholder="Any special requirements, preferences, or additional measurements..."
                     rows={3}
                   />
                 </div>
 
                 <div className="flex gap-4 pt-4">
-                  <Button variant="outline" onClick={() => setShowTailorForm(false)} className="flex-1">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowTailorForm(false)}
+                    className="flex-1"
+                  >
                     Cancel
                   </Button>
-                  <Button onClick={submitToTailor} disabled={isSubmittingOrder} className="flex-1">
+                  <Button
+                    onClick={submitToTailor}
+                    disabled={isSubmittingOrder}
+                    className="flex-1"
+                  >
                     {isSubmittingOrder ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1112,5 +1298,5 @@ export default function VirtualTryOnPage() {
         )}
       </div>
     </div>
-  )
+  );
 }
