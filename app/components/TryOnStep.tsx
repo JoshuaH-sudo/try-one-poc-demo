@@ -125,8 +125,9 @@ export function TryOnStep({ form, onNext }: TryOnStepProps) {
                       <Image
                         src={variation.imageUrl || "/placeholder.svg"}
                         alt="Front variation"
-                        width={150}
-                        height={200}
+                        // 1024x1536
+                        width={1024 / 4}
+                        height={1536 / 4}
                         className="rounded-lg object-cover w-full"
                       />
                       {selectedFront === variation.id && (
@@ -241,24 +242,6 @@ export function TryOnStep({ form, onNext }: TryOnStepProps) {
           )}
         </Button>
       </div>
-
-      {/* Try On Result */}
-      {tryOnResult && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Virtual Try-On</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Image
-              src={tryOnResult.imageUrl || "/placeholder.svg"}
-              alt="Try-on result"
-              width={300}
-              height={400}
-              className="rounded-lg object-cover mx-auto"
-            />
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

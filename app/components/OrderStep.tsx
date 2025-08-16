@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { UseFormReturn } from "react-hook-form";
 import type { FormValues } from "../utils/types";
 import Image from "next/image";
+import { useRouter } from "next/router";
 
 interface OrderStepProps {
   form: UseFormReturn<FormValues>;
@@ -19,6 +20,7 @@ interface OrderStepProps {
 export function OrderStep({ form }: OrderStepProps) {
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const {
     watch,
@@ -72,6 +74,8 @@ export function OrderStep({ form }: OrderStepProps) {
         title: "Order submitted!",
         description: "Your custom dress order has been sent to the tailor.",
       });
+
+      router.push("/success");
     } catch (error) {
       console.error("Error submitting order:", error);
       toast({
@@ -89,7 +93,7 @@ export function OrderStep({ form }: OrderStepProps) {
 
   return (
     <div className="space-y-6 flex flex-row justify-between gap-2">
-      <Card className="space-y-2 w-full h-full">
+      <Card className="w-full h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Send className="h-5 w-5" />
@@ -102,9 +106,10 @@ export function OrderStep({ form }: OrderStepProps) {
               <Image
                 src={tryOnResult.imageUrl}
                 alt="Try-On Result"
-                layout="fill"
-                objectFit="cover"
-                className="rounded-lg"
+                // 1024x1536
+                width={1024 / 4}
+                height={1536 / 4}
+                className="rounded-lg object-cover w-full"
               />
             </div>
           ) : (

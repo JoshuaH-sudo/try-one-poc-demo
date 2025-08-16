@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { analyzeClothingImage, analyzePersonImage } from "@/app/lib/analyze-actions"
 import { generateTryOnWithOpenAI } from "@/app/lib/tryon-actions"
 
 export async function POST(req: NextRequest) {
@@ -41,19 +40,13 @@ export async function POST(req: NextRequest) {
     const finalClothingImages = clothingImages.slice(0, 1) // Only 1 clothing image for simplicity
 
     // Parallel: analyses + generation
-    const [personDetails, clothingDetails, generationResult] = await Promise.all([
-      analyzePersonImage(finalPersonImages[0]),
-      analyzeClothingImage(finalClothingImages[0]),
-      generateTryOnWithOpenAI(finalPersonImages, finalClothingImages),
-    ])
+    const generationResult = await generateTryOnWithOpenAI(finalPersonImages, finalClothingImages)
 
     const processingTime = ((Date.now() - startTime) / 1000).toFixed(1) + "s"
 
     return NextResponse.json({
       success: true,
       imageUrl: generationResult.imageUrl,
-      personDetails,
-      clothingDetails,
       processingTime,
       modelUsed: generationResult.modelUsed,
       provider: generationResult.provider,
