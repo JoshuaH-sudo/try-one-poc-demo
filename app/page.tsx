@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -27,6 +27,13 @@ interface DesignVariation {
 interface TryOnResult {
   imageUrl: string
   timestamp: string
+}
+
+const STORAGE_KEYS = {
+  DESIGN_STATE: "dress-studio-design-state",
+  TRYON_STATE: "dress-studio-tryon-state",
+  TAILOR_FORM: "dress-studio-tailor-form",
+  CURRENT_TAB: "dress-studio-current-tab",
 }
 
 export default function VirtualTryOnPage() {
@@ -60,7 +67,212 @@ export default function VirtualTryOnPage() {
   })
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false)
 
+  const [currentTab, setCurrentTab] = useState("design")
+
   const { toast } = useToast()
+
+  const saveToStorage = (key: string, data: any) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(data))
+    } catch (error) {
+      console.error("Failed to save to localStorage:", error)
+    }
+  }
+
+  const loadFromStorage = (key: string) => {
+    try {
+      const item = localStorage.getItem(key)
+      return item ? JSON.parse(item) : null
+    } catch (error) {
+      console.error("Failed to load from localStorage:", error)
+      return null
+    }
+  }
+
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const createFileFromBase64 = (base64: string, filename: string): File => {
+    const arr = base64.split(",")
+    const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg"
+    const bstr = atob(arr[1])
+    let n = bstr.length
+    const u8arr = new Uint8Array(n)
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n)
+    }
+    return new File([u8arr], filename, { type: mime })
+  }
+
+  const saveDesignState = async () => {
+    const designState = {
+      frontDrawing: frontDrawing
+        ? {
+            ...frontDrawing,
+            fileData: await convertFileToBase64(frontDrawing.file),
+          }
+        : null,
+      backDrawing: backDrawing
+        ? {
+            ...backDrawing,
+            fileData: await convertFileToBase64(backDrawing.file),
+          }
+        : null,
+      designDescription,
+      selectedColor,
+      designVariations,
+      selectedFront,
+      selectedBack,
+    }
+    saveToStorage(STORAGE_KEYS.DESIGN_STATE, designState)
+  }
+
+  const saveTryOnState = async () => {
+    const tryOnState = {
+      personImage: personImage
+        ? {
+            ...personImage,
+            fileData: await convertFileToBase64(personImage.file),
+          }
+        : null,
+      clothingImage: clothingImage
+        ? {
+            ...clothingImage,
+            fileData: await convertFileToBase64(clothingImage.file),
+          }
+        : null,
+      tryOnResult,
+    }
+    saveToStorage(STORAGE_KEYS.TRYON_STATE, tryOnState)
+  }
+
+  const restoreState = () => {
+    // Restore current tab
+    const savedTab = loadFromStorage(STORAGE_KEYS.CURRENT_TAB)
+    if (savedTab) {
+      setCurrentTab(savedTab)
+    }
+
+    // Restore design state
+    const designState = loadFromStorage(STORAGE_KEYS.DESIGN_STATE)
+    if (designState) {
+      if (designState.frontDrawing) {
+        const file = createFileFromBase64(designState.frontDrawing.fileData, "front-drawing.jpg")
+        setFrontDrawing({
+          file,
+          preview: designState.frontDrawing.preview,
+          id: designState.frontDrawing.id,
+        })
+      }
+      if (designState.backDrawing) {
+        const file = createFileFromBase64(designState.backDrawing.fileData, "back-drawing.jpg")
+        setBackDrawing({
+          file,
+          preview: designState.backDrawing.preview,
+          id: designState.backDrawing.id,
+        })
+      }
+      setDesignDescription(designState.designDescription || "")
+      setSelectedColor(designState.selectedColor || "#000000")
+      setDesignVariations(designState.designVariations || [])
+      setSelectedFront(designState.selectedFront || null)
+      setSelectedBack(designState.selectedBack || null)
+    }
+
+    // Restore try-on state
+    const tryOnState = loadFromStorage(STORAGE_KEYS.TRYON_STATE)
+    if (tryOnState) {
+      if (tryOnState.personImage) {
+        const file = createFileFromBase64(tryOnState.personImage.fileData, "person.jpg")
+        setPersonImage({
+          file,
+          preview: tryOnState.personImage.preview,
+          id: tryOnState.personImage.id,
+        })
+      }
+      if (tryOnState.clothingImage) {
+        const file = createFileFromBase64(tryOnState.clothingImage.fileData, "clothing.jpg")
+        setClothingImage({
+          file,
+          preview: tryOnState.clothingImage.preview,
+          id: tryOnState.clothingImage.id,
+        })
+      }
+      setTryOnResult(tryOnState.tryOnResult || null)
+    }
+
+    // Restore tailor form
+    const savedTailorForm = loadFromStorage(STORAGE_KEYS.TAILOR_FORM)
+    if (savedTailorForm) {
+      setTailorForm(savedTailorForm)
+    }
+  }
+
+  const clearAllData = () => {
+    // Clear localStorage
+    Object.values(STORAGE_KEYS).forEach((key) => {
+      localStorage.removeItem(key)
+    })
+
+    // Reset all state
+    setFrontDrawing(null)
+    setBackDrawing(null)
+    setDesignDescription("")
+    setSelectedColor("#000000")
+    setDesignVariations([])
+    setSelectedFront(null)
+    setSelectedBack(null)
+    setPersonImage(null)
+    setClothingImage(null)
+    setTryOnResult(null)
+    setShowTailorForm(false)
+    setTailorForm({
+      fullName: "",
+      contact: "",
+      bust: "",
+      waist: "",
+      hips: "",
+      height: "",
+      weight: "",
+      additionalNotes: "",
+    })
+    setCurrentTab("design")
+
+    toast({
+      title: "Data cleared",
+      description: "All stored data has been cleared. Starting fresh!",
+    })
+  }
+
+  useEffect(() => {
+    restoreState()
+  }, [])
+
+  useEffect(() => {
+    if (frontDrawing || backDrawing || designDescription || designVariations.length > 0) {
+      saveDesignState()
+    }
+  }, [frontDrawing, backDrawing, designDescription, selectedColor, designVariations, selectedFront, selectedBack])
+
+  useEffect(() => {
+    if (personImage || clothingImage || tryOnResult) {
+      saveTryOnState()
+    }
+  }, [personImage, clothingImage, tryOnResult])
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.TAILOR_FORM, tailorForm)
+  }, [tailorForm])
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.CURRENT_TAB, currentTab)
+  }, [currentTab])
 
   const handleImageUpload = (files: FileList | null, setter: (img: UploadedImage | null) => void) => {
     if (!files || files.length === 0) return
@@ -283,9 +495,19 @@ export default function VirtualTryOnPage() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Custom Dress Studio</h1>
           <p className="text-lg text-gray-600">Design your dream dress or try on existing designs with AI</p>
+          <div className="mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearAllData}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
+            >
+              🔄 Start Over
+            </Button>
+          </div>
         </div>
 
-        <Tabs defaultValue="design" className="w-full">
+        <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="design" className="flex items-center gap-2">
               <Palette className="w-4 h-4" />
