@@ -35,30 +35,20 @@ export async function POST(request: NextRequest) {
       apiKey: process.env.OPENAI_API_KEY,
     })
 
-    // Convert images to base64
-    const frontBuffer = await frontDrawing.arrayBuffer()
-    const frontBase64 = Buffer.from(frontBuffer).toString("base64")
-
-    let backBase64 = null
-    if (backDrawing) {
-      const backBuffer = await backDrawing.arrayBuffer()
-      backBase64 = Buffer.from(backBuffer).toString("base64")
-    }
-
-    const basePrompt = `Professional fashion design rendering of a dress. ${description}. Primary color: ${color}. High-quality fashion illustration style, suitable for tailoring reference. Clean white background, front view, detailed fabric textures and construction details visible.`
+    const basePrompt = `Transform this dress design sketch into a professional fashion rendering. Apply the following specifications: ${description}. Use primary color: ${color}. Create a high-quality fashion illustration with detailed fabric textures, construction details, and professional styling. Maintain the original design structure while enhancing with realistic details and the specified color scheme.`
 
     const variations = []
 
-    // Generate 2 front variations
+    // Generate 2 front variations using the uploaded front drawing
     for (let i = 1; i <= 2; i++) {
-      const frontPrompt = `${basePrompt} Variation ${i}: ${i === 1 ? "elegant and refined styling" : "modern contemporary interpretation"}.`
+      const frontPrompt = `${basePrompt} Style variation ${i}: ${i === 1 ? "elegant and refined styling with classic details" : "modern contemporary interpretation with updated elements"}.`
 
       try {
-        const frontResponse = await openai.images.generate({
-          model: "dall-e-3",
+        const frontResponse = await openai.images.edit({
+          model: "gpt-image-1",
+          image: frontDrawing,
           prompt: frontPrompt,
           size: "1024x1024",
-          quality: "standard",
           n: 1,
         })
 
@@ -86,17 +76,17 @@ export async function POST(request: NextRequest) {
 
     // Generate back variations if back drawing provided
     if (backDrawing) {
-      const backBasePrompt = `Professional fashion design rendering of a dress back view. ${description}. Primary color: ${color}. High-quality fashion illustration style, back view, detailed construction and closure details visible. Clean white background.`
+      const backBasePrompt = `Transform this dress back design sketch into a professional fashion rendering. Apply the following specifications: ${description}. Use primary color: ${color}. Create a high-quality back view fashion illustration with detailed construction, closure details, and professional styling. Maintain the original back design structure while enhancing with realistic details.`
 
       for (let i = 1; i <= 2; i++) {
-        const backPrompt = `${backBasePrompt} Variation ${i}: ${i === 1 ? "elegant back design with refined details" : "modern back design with contemporary elements"}.`
+        const backPrompt = `${backBasePrompt} Style variation ${i}: ${i === 1 ? "elegant back design with refined closure and detail work" : "modern back design with contemporary construction elements"}.`
 
         try {
-          const backResponse = await openai.images.generate({
-            model: "dall-e-3",
+          const backResponse = await openai.images.edit({
+            model: "gpt-image-1",
+            image: backDrawing,
             prompt: backPrompt,
             size: "1024x1024",
-            quality: "standard",
             n: 1,
           })
 
