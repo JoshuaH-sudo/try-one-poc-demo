@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
+import OpenAI from "openai"
 
 const DesignVariationsSchema = z.object({
   variations: z.array(
@@ -24,6 +25,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Front drawing is required" }, { status: 400 })
     }
 
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+
     // Convert images to base64
     const frontBuffer = await frontDrawing.arrayBuffer()
     const frontBase64 = Buffer.from(frontBuffer).toString("base64")
@@ -34,50 +39,80 @@ export async function POST(request: NextRequest) {
       backBase64 = Buffer.from(backBuffer).toString("base64")
     }
 
-    // Generate design variations using OpenAI
-    const prompt = `Create 2 realistic dress design variations based on this drawing. 
-    Description: ${description}
-    Primary color: ${color}
-    
-    Generate professional fashion design renderings that could be used by a tailor.
-    Make the designs wearable and realistic, with proper proportions and details.
-    ${backDrawing ? "Also create 2 variations for the back design." : "Focus only on front designs."}
-    
-    Return the variations as image URLs (use placeholder URLs for now: /placeholder.svg?height=600&width=400&query=dress_design_variation_X)
-    `
+    const basePrompt = `Professional fashion design rendering of a dress. ${description}. Primary color: ${color}. High-quality fashion illustration style, suitable for tailoring reference. Clean white background, front view, detailed fabric textures and construction details visible.`
 
-    // For now, we'll create mock variations since we need actual image generation
-    // In a real implementation, you'd use OpenAI's image generation API
-    const variations = [
-      {
-        id: "front_1",
-        imageUrl: `/placeholder.svg?height=600&width=400&query=elegant_dress_design_variation_1_${color.replace("#", "")}`,
-        type: "front" as const,
-        description: "Elegant variation with refined details",
-      },
-      {
-        id: "front_2",
-        imageUrl: `/placeholder.svg?height=600&width=400&query=modern_dress_design_variation_2_${color.replace("#", "")}`,
-        type: "front" as const,
-        description: "Modern interpretation with contemporary styling",
-      },
-    ]
+    const variations = []
 
+    // Generate 2 front variations
+    for (let i = 1; i <= 2; i++) {
+      const frontPrompt = `${basePrompt} Variation ${i}: ${i === 1 ? "elegant and refined styling" : "modern contemporary interpretation"}.`
+
+      try {
+        const frontResponse = await openai.images.generate({
+          model: "dall-e-3",
+          prompt: frontPrompt,
+          size: "1024x1024",
+          quality: "standard",
+          n: 1,
+        })
+
+        if (frontResponse.data[0]?.url) {
+          variations.push({
+            id: `front_${i}`,
+            imageUrl: frontResponse.data[0].url,
+            type: "front" as const,
+            description:
+              i === 1 ? "Elegant variation with refined details" : "Modern interpretation with contemporary styling",
+          })
+        }
+      } catch (error) {
+        console.error(`Error generating front variation ${i}:`, error)
+        // Fallback to placeholder
+        variations.push({
+          id: `front_${i}`,
+          imageUrl: `/placeholder.svg?height=600&width=400&query=dress_design_variation_${i}_${color.replace("#", "")}`,
+          type: "front" as const,
+          description:
+            i === 1 ? "Elegant variation with refined details" : "Modern interpretation with contemporary styling",
+        })
+      }
+    }
+
+    // Generate back variations if back drawing provided
     if (backDrawing) {
-      variations.push(
-        {
-          id: "back_1",
-          imageUrl: `/placeholder.svg?height=600&width=400&query=elegant_back_design_variation_1_${color.replace("#", "")}`,
-          type: "back" as const,
-          description: "Elegant back design variation",
-        },
-        {
-          id: "back_2",
-          imageUrl: `/placeholder.svg?height=600&width=400&query=modern_back_design_variation_2_${color.replace("#", "")}`,
-          type: "back" as const,
-          description: "Modern back design variation",
-        },
-      )
+      const backBasePrompt = `Professional fashion design rendering of a dress back view. ${description}. Primary color: ${color}. High-quality fashion illustration style, back view, detailed construction and closure details visible. Clean white background.`
+
+      for (let i = 1; i <= 2; i++) {
+        const backPrompt = `${backBasePrompt} Variation ${i}: ${i === 1 ? "elegant back design with refined details" : "modern back design with contemporary elements"}.`
+
+        try {
+          const backResponse = await openai.images.generate({
+            model: "dall-e-3",
+            prompt: backPrompt,
+            size: "1024x1024",
+            quality: "standard",
+            n: 1,
+          })
+
+          if (backResponse.data[0]?.url) {
+            variations.push({
+              id: `back_${i}`,
+              imageUrl: backResponse.data[0].url,
+              type: "back" as const,
+              description: i === 1 ? "Elegant back design variation" : "Modern back design variation",
+            })
+          }
+        } catch (error) {
+          console.error(`Error generating back variation ${i}:`, error)
+          // Fallback to placeholder
+          variations.push({
+            id: `back_${i}`,
+            imageUrl: `/placeholder.svg?height=600&width=400&query=back_design_variation_${i}_${color.replace("#", "")}`,
+            type: "back" as const,
+            description: i === 1 ? "Elegant back design variation" : "Modern back design variation",
+          })
+        }
+      }
     }
 
     return NextResponse.json({
