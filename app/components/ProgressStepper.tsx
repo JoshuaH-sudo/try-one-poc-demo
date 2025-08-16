@@ -12,14 +12,23 @@ interface Step {
 
 interface ProgressStepperProps {
   steps: Step[];
+  currentStep: number;
+  onStepChange: (stepIndex: number) => void;
 }
 
-export function ProgressStepper({ steps }: ProgressStepperProps) {
+export function ProgressStepper({ steps, currentStep, onStepChange }: ProgressStepperProps) {
   return (
     <div className="py-8 mx-auto">
       <div className="flex items-center justify-between">
         {steps.map((step, index) => (
-          <div key={step.id} className={cn("flex items-center", index < steps.length - 1 && "w-full grow")}>
+          <div
+            key={step.id}
+            className={cn(
+              "flex items-center",
+              index < steps.length - 1 && "w-full grow"
+            )}
+            onClick={() => index < currentStep && onStepChange(index)}
+          >
             <div className="flex flex-col items-center grow-0">
               <div
                 className={cn(
