@@ -16,11 +16,7 @@ interface ProgressStepperProps {
   onStepChange: (stepIndex: number) => void;
 }
 
-export function ProgressStepper({
-  steps,
-  currentStep,
-  onStepChange,
-}: ProgressStepperProps) {
+export function ProgressStepper({ steps, currentStep, onStepChange }: ProgressStepperProps) {
   return (
     <div className="py-8 mx-auto">
       <div className="flex items-center justify-between">
@@ -29,17 +25,11 @@ export function ProgressStepper({
             key={step.id}
             className={cn(
               "flex items-center",
-
               index < steps.length - 1 && "w-full grow"
             )}
+            onClick={() => index < currentStep && onStepChange(index)}
           >
-            <div
-              className={cn(
-                "flex flex-col items-center grow-0",
-                index < currentStep && "cursor-pointer hover:bg-gray-200 rounded-2xl p-2"
-              )}
-              onClick={() => index < currentStep && onStepChange(index)}
-            >
+            <div className="flex flex-col items-center grow-0">
               <div
                 className={cn(
                   "flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-medium",
