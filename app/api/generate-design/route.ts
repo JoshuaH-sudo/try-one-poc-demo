@@ -1,19 +1,48 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import OpenAI from "openai";
+import sharp from "sharp";
 
 export const runtime = "nodejs";
 
-const DesignVariationsSchema = z.object({
-  variations: z.array(
-    z.object({
-      id: z.string(),
-      imageUrl: z.string(),
-      type: z.enum(["front", "back"]),
-      description: z.string(),
-    })
-  ),
-});
+/**
+ * Compresses an image from a base64 data URL by reducing dimensions by 4x
+ * @param dataUrl The data URL string (e.g., "data:image/jpeg;base64,...")
+ * @returns Compressed data URL
+ */
+async function compressImageDataUrl(dataUrl: string): Promise<string> {
+  // Parse the data URL
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) {
+    throw new Error("Invalid data URL format");
+  }
+
+  const _contentType = match[1]; // Not used but kept for reference
+  const base64Data = match[2];
+  const inputBuffer = Buffer.from(base64Data, "base64");
+  
+  console.log(`Original image size: ${Math.round(inputBuffer.length / 1024)} KB`);
+  
+  // Get the metadata to calculate new dimensions
+  const metadata = await sharp(inputBuffer).metadata();
+  const width = metadata.width || 1024;
+  const height = metadata.height || 1536;
+  
+  // Simple approach: divide dimensions by 4
+  const newWidth = Math.round(width / 4);
+  const newHeight = Math.round(height / 4);
+  
+  // Resize the image
+  const outputBuffer = await sharp(inputBuffer)
+    .resize(newWidth, newHeight)
+    .jpeg({ quality: 80 })
+    .toBuffer();
+  
+  console.log(`Compressed size: ${Math.round(outputBuffer.length / 1024)} KB (${newWidth}x${newHeight})`);
+  
+  // Convert back to data URL
+  const compressedBase64 = outputBuffer.toString("base64");
+  return `data:image/jpeg;base64,${compressedBase64}`;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,24 +93,40 @@ export async function POST(request: NextRequest) {
         throw new Error("No response from OpenAI");
       }
 
-      // Process all images returned in the response
-      frontResponse.data.forEach((image, index) => {
+      // Process all images returned in the response - using for loop instead of forEach for async
+      for (let index = 0; index < frontResponse.data.length; index++) {
+        const image = frontResponse.data[index];
         const generatedImageUrl = image.b64_json;
         const outputFormat = frontResponse.output_format;
 
         if (!generatedImageUrl) {
           console.warn(`No image data for front variation ${index + 1}`);
-          return;
+          continue;
         }
 
         console.log(`Front variation ${index + 1} generated successfully`);
-        variations.push({
-          id: `front_${index + 1}`,
-          imageUrl: `data:image/${outputFormat};base64,${generatedImageUrl}`,
-          type: "front" as const,
-          description: `Front design variation ${index + 1}`,
-        });
-      });
+        try {
+          // Compress the image data URL before adding to variations
+          const originalDataUrl = `data:image/${outputFormat};base64,${generatedImageUrl}`;
+          const compressedDataUrl = await compressImageDataUrl(originalDataUrl);
+          
+          variations.push({
+            id: `front_${index + 1}`,
+            imageUrl: compressedDataUrl,
+            type: "front" as const,
+            description: `Front design variation ${index + 1}`,
+          });
+        } catch (compressionError) {
+          console.error(`Failed to compress front variation ${index + 1}:`, compressionError);
+          // Fall back to original image if compression fails
+          variations.push({
+            id: `front_${index + 1}`,
+            imageUrl: `data:image/${outputFormat};base64,${generatedImageUrl}`,
+            type: "front" as const,
+            description: `Front design variation ${index + 1}`,
+          });
+        }
+      }
     } catch (error) {
       console.error("Error generating front variations:", error);
       // Add fallback placeholders for both expected variations
@@ -118,24 +163,40 @@ export async function POST(request: NextRequest) {
           throw new Error("No response from OpenAI");
         }
 
-        // Process all images returned in the response
-        backResponse.data.forEach((image, index) => {
+        // Process all images returned in the response - using for loop instead of forEach for async
+        for (let index = 0; index < backResponse.data.length; index++) {
+          const image = backResponse.data[index];
           const generatedImageUrl = image.b64_json;
           const outputFormat = backResponse.output_format;
 
           if (!generatedImageUrl) {
             console.warn(`No image data for back variation ${index + 1}`);
-            return;
+            continue;
           }
 
           console.log(`Back variation ${index + 1} generated successfully`);
-          variations.push({
-            id: `back_${index + 1}`,
-            imageUrl: `data:image/${outputFormat};base64,${generatedImageUrl}`,
-            type: "back" as const,
-            description: `Back design variation ${index + 1}`,
-          });
-        });
+          try {
+            // Compress the image data URL before adding to variations
+            const originalDataUrl = `data:image/${outputFormat};base64,${generatedImageUrl}`;
+            const compressedDataUrl = await compressImageDataUrl(originalDataUrl);
+            
+            variations.push({
+              id: `back_${index + 1}`,
+              imageUrl: compressedDataUrl,
+              type: "back" as const,
+              description: `Back design variation ${index + 1}`,
+            });
+          } catch (compressionError) {
+            console.error(`Failed to compress back variation ${index + 1}:`, compressionError);
+            // Fall back to original image if compression fails
+            variations.push({
+              id: `back_${index + 1}`,
+              imageUrl: `data:image/${outputFormat};base64,${generatedImageUrl}`,
+              type: "back" as const,
+              description: `Back design variation ${index + 1}`,
+            });
+          }
+        }
       } catch (error) {
         console.error("Error generating back variations:", error);
         // Add fallback placeholders for both expected variations
