@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
 import type { UseFormReturn } from "react-hook-form"
 import type { FormValues } from "../utils/types"
-import { handleImageUpload, removeImage, compressImage } from "../utils/imageUtils"
+import { handleImageUpload, removeImage, compressImage, type UploadedImage } from "../utils/imageUtils"
 
 interface TryOnStepProps {
   form: UseFormReturn<FormValues>
@@ -25,7 +25,7 @@ export function TryOnStep({ form, onNext }: TryOnStepProps) {
   const designVariations = watch("designVariations")
   const selectedFront = watch("selectedFront")
   const selectedBack = watch("selectedBack")
-  const personImage = watch("personImage")
+  const personImage: UploadedImage | null = watch("personImage")
   const tryOnResult = watch("tryOnResult")
 
   const generateTryOn = async () => {

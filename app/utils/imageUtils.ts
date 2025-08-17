@@ -68,3 +68,26 @@ export function getImageDimensions(file: File): Promise<{ width: number; height:
     img.src = URL.createObjectURL(file)
   })
 }
+
+export interface UploadedImage {
+  file: File
+  preview: string
+  id: string
+}
+
+export const handleImageUpload = (files: FileList | null, setter: (img: UploadedImage | null) => void) => {
+  if (!files || files.length === 0) return
+
+  const file = files[0]
+  if (file.type.startsWith("image/")) {
+    const preview = URL.createObjectURL(file)
+    const id = Math.random().toString(36).substr(2, 9)
+    setter({ file, preview, id })
+  }
+}
+
+export const removeImage = (image: UploadedImage | null) => {
+  if (image) {
+    URL.revokeObjectURL(image.preview)
+  }
+}

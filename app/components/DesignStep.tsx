@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
 import type { UseFormReturn } from "react-hook-form"
 import type { FormValues } from "../utils/types"
-import { handleImageUpload, removeImage, compressImage } from "../utils/imageUtils"
+import { handleImageUpload, removeImage, compressImage, type UploadedImage } from "../utils/imageUtils"
 
 interface DesignStepProps {
   form: UseFormReturn<FormValues>
@@ -23,8 +23,8 @@ export function DesignStep({ form, onNext }: DesignStepProps) {
   const { toast } = useToast()
 
   const { watch, setValue } = form
-  const frontDrawing = watch("frontDrawing")
-  const backDrawing = watch("backDrawing")
+  const frontDrawing: UploadedImage | null = watch("frontDrawing")
+  const backDrawing: UploadedImage | null = watch("backDrawing")
   const designDescription = watch("designDescription")
   const selectedColor = watch("selectedColor")
   const designVariations = watch("designVariations")
