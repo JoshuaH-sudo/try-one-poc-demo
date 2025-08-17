@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const basePrompt = `Transform this dress design sketch into a professional fashion rendering. Apply the following specifications: ${description}. Use primary color: ${color}. Create a high-quality fashion illustration with detailed fabric textures, construction details, and professional styling. Maintain the original design structure while enhancing with realistic details and the specified color scheme.`;
+    const basePrompt = `Transform this dress design sketch into a professional fashion rendering. Apply the following specifications: ${description}. Use primary color: ${color} in the dress. The background should be a plain white. Create a high-quality fashion illustration with detailed fabric textures, construction details, and professional styling. Maintain the original design structure while enhancing with realistic details and the specified color scheme.`;
 
     const variations = [];
 
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     // Generate back variations if back drawing provided
     if (backDrawing) {
       console.log("Generating back variations");
-      const backBasePrompt = `Transform this back view of a dress design sketch into a professional fashion rendering. Apply the following specifications: ${description}. Use primary color: ${color}. Create a high-quality back view fashion illustration with detailed construction, closure details, and professional styling. Maintain the original back design structure while enhancing with realistic details.`;
+      const backBasePrompt = `Transform this back view of a dress design sketch into a professional fashion rendering. Apply the following specifications: ${description}. Use primary color: ${color} in the dress. The background colour should be plain white. Create a high-quality back view fashion illustration with detailed construction, closure details, and professional styling. Maintain the original back design structure while enhancing with realistic details.`;
 
       try {
         const backResponse = await openai.images.edit({
