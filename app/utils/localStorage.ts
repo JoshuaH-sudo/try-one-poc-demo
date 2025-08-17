@@ -7,9 +7,74 @@ const STORAGE_KEYS = {
 
 export const saveToStorage = (key: string, data: any) => {
   try {
-    localStorage.setItem(key, JSON.stringify(data))
+    const serializedData = JSON.stringify(data)
+    localStorage.setItem(key, serializedData)
+    return true
   } catch (error) {
-    console.error("Failed to save to localStorage:", error)
+    if (error instanceof DOMException && error.name === "QuotaExceededError") {
+      console.warn("localStorage quota exceeded, attempting to clear old data...")
+
+      // Try to clear other app data first
+      try {
+        clearOldData()
+        localStorage.setItem(key, JSON.stringify(data))
+        return true
+      } catch (retryError) {
+        console.error("Failed to save even after clearing old data:", retryError)
+        // Fallback: try to save without images
+        if (key === STORAGE_KEYS.FORM_DATA) {
+          return saveEssentialDataOnly(data)
+        }
+      }
+    } else {
+      console.error("Failed to save to localStorage:", error)
+    }
+    return false
+  }
+}
+
+const saveEssentialDataOnly = (data: any) => {
+  try {
+    const essentialData = {
+      designDescription: data.designDescription,
+      selectedColor: data.selectedColor,
+      designVariations: data.designVariations,
+      selectedFront: data.selectedFront,
+      selectedBack: data.selectedBack,
+      tryOnResult: data.tryOnResult,
+      // Keep form fields but remove file data
+      fullName: data.fullName,
+      contact: data.contact,
+      measurements: data.measurements,
+    }
+    localStorage.setItem(STORAGE_KEYS.FORM_DATA, JSON.stringify(essentialData))
+    console.warn("Saved essential data only (images excluded due to storage limits)")
+    return true
+  } catch (error) {
+    console.error("Failed to save even essential data:", error)
+    return false
+  }
+}
+
+const clearOldData = () => {
+  // Clear any old keys that might exist
+  const keysToCheck = ["dress-studio-old-data", "dress-studio-temp", "dress-studio-backup"]
+
+  keysToCheck.forEach((key) => {
+    if (localStorage.getItem(key)) {
+      localStorage.removeItem(key)
+    }
+  })
+
+  // If still having issues, clear the current form data to make space
+  localStorage.removeItem(STORAGE_KEYS.FORM_DATA)
+}
+
+const estimateStorageSize = (data: any): number => {
+  try {
+    return new Blob([JSON.stringify(data)]).size
+  } catch {
+    return 0
   }
 }
 
@@ -19,6 +84,11 @@ export const loadFromStorage = (key: string) => {
     return item ? JSON.parse(item) : null
   } catch (error) {
     console.error("Failed to load from localStorage:", error)
+    try {
+      localStorage.removeItem(key)
+    } catch (clearError) {
+      console.error("Failed to clear corrupted data:", clearError)
+    }
     return null
   }
 }
@@ -45,28 +115,45 @@ export const createFileFromBase64 = (base64: string, filename: string): File => 
 }
 
 export const saveFormData = async (data: FormValues) => {
-  const serializedData = {
-    ...data,
-    frontDrawing: data.frontDrawing
-      ? {
-          ...data.frontDrawing,
-          fileData: await convertFileToBase64(data.frontDrawing.file),
-        }
-      : null,
-    backDrawing: data.backDrawing
-      ? {
-          ...data.backDrawing,
-          fileData: await convertFileToBase64(data.backDrawing.file),
-        }
-      : null,
-    personImage: data.personImage
-      ? {
-          ...data.personImage,
-          fileData: await convertFileToBase64(data.personImage.file),
-        }
-      : null,
+  try {
+    const serializedData = {
+      ...data,
+      frontDrawing: data.frontDrawing
+        ? {
+            ...data.frontDrawing,
+            fileData: await convertFileToBase64(data.frontDrawing.file),
+          }
+        : null,
+      backDrawing: data.backDrawing
+        ? {
+            ...data.backDrawing,
+            fileData: await convertFileToBase64(data.backDrawing.file),
+          }
+        : null,
+      personImage: data.personImage
+        ? {
+            ...data.personImage,
+            fileData: await convertFileToBase64(data.personImage.file),
+          }
+        : null,
+    }
+
+    // Check estimated size before saving
+    const estimatedSize = estimateStorageSize(serializedData)
+    if (estimatedSize > 4 * 1024 * 1024) {
+      // 4MB threshold
+      console.warn(`Data size (${Math.round(estimatedSize / 1024 / 1024)}MB) may exceed storage limits`)
+    }
+
+    const success = saveToStorage(STORAGE_KEYS.FORM_DATA, serializedData)
+    if (!success) {
+      console.warn("Form data could not be saved to localStorage")
+    }
+    return success
+  } catch (error) {
+    console.error("Error preparing form data for storage:", error)
+    return false
   }
-  saveToStorage(STORAGE_KEYS.FORM_DATA, serializedData)
 }
 
 export const loadFormData = (): Partial<FormValues> => {
@@ -115,7 +202,43 @@ export const loadCurrentStep = (): number => {
 }
 
 export const clearAllData = () => {
-  Object.values(STORAGE_KEYS).forEach((key) => {
-    localStorage.removeItem(key)
-  })
+  try {
+    Object.values(STORAGE_KEYS).forEach((key) => {
+      try {
+        localStorage.removeItem(key)
+      } catch (error) {
+        console.error(`Failed to clear ${key}:`, error)
+      }
+    })
+    console.log("All app data cleared successfully")
+  } catch (error) {
+    console.error("Error clearing app data:", error)
+  }
+}
+
+export const getStorageInfo = () => {
+  try {
+    const test = "test"
+    localStorage.setItem(test, test)
+    localStorage.removeItem(test)
+
+    let used = 0
+    for (const key in localStorage) {
+      if (localStorage.hasOwnProperty(key)) {
+        used += localStorage[key].length + key.length
+      }
+    }
+
+    return {
+      available: true,
+      used: Math.round(used / 1024), // KB
+      estimated: Math.round((used / 1024 / 1024) * 100) / 100, // MB
+    }
+  } catch {
+    return {
+      available: false,
+      used: 0,
+      estimated: 0,
+    }
+  }
 }
