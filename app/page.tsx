@@ -1,22 +1,16 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { RotateCcw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { ProgressStepper } from "./components/ProgressStepper";
-import { DesignStep } from "./components/DesignStep";
-import { TryOnStep } from "./components/TryOnStep";
-import { OrderStep } from "./components/OrderStep";
-import type { FormValues } from "./utils/types";
-import {
-  saveFormData,
-  loadFormData,
-  saveCurrentStep,
-  loadCurrentStep,
-  clearAllData,
-} from "./utils/localStorage";
+import { useState, useEffect } from "react"
+import { useForm } from "react-hook-form"
+import { Button } from "@/components/ui/button"
+import { RotateCcw } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { ProgressStepper } from "./components/ProgressStepper"
+import { DesignStep } from "./components/DesignStep"
+import { TryOnStep } from "./components/TryOnStep"
+import { OrderStep } from "./components/OrderStep"
+import type { FormValues } from "./utils/types"
+import { saveFormData, loadFormData, saveCurrentStep, loadCurrentStep, clearAllData } from "./utils/localStorage"
 
 const defaultValues: FormValues = {
   frontDrawing: null,
@@ -38,38 +32,38 @@ const defaultValues: FormValues = {
     weight: "",
     additionalNotes: "",
   },
-};
+}
 
 export default function VirtualTryOnPage() {
-  const [currentStep, setCurrentStep] = useState(0);
-  const { toast } = useToast();
+  const [currentStep, setCurrentStep] = useState(0)
+  const { toast } = useToast()
 
   const form = useForm<FormValues>({
     defaultValues,
-  });
+  })
 
-  const { watch, reset } = form;
-  const formData = watch();
+  const { watch, reset } = form
+  const formData = watch()
 
   useEffect(() => {
-    const savedData = loadFormData();
-    const savedStep = loadCurrentStep();
+    const savedData = loadFormData()
+    const savedStep = loadCurrentStep()
 
     if (Object.keys(savedData).length > 0) {
-      reset({ ...defaultValues, ...savedData });
+      reset({ ...defaultValues, ...savedData })
     }
-    setCurrentStep(savedStep);
-  }, [reset]);
+    setCurrentStep(savedStep)
+  }, [reset])
 
   useEffect(() => {
     if (formData.frontDrawing || formData.designVariations.length > 0) {
-      saveFormData(formData);
+      saveFormData(formData)
     }
-  }, [formData]);
+  }, [formData])
 
   useEffect(() => {
-    saveCurrentStep(currentStep);
-  }, [currentStep]);
+    saveCurrentStep(currentStep)
+  }, [currentStep])
 
   const steps = [
     {
@@ -90,55 +84,43 @@ export default function VirtualTryOnPage() {
       completed: false,
       current: currentStep === 2,
     },
-  ];
+  ]
 
   const handleNext = () => {
     if (currentStep < 2) {
-      setCurrentStep(currentStep + 1);
+      setCurrentStep(currentStep + 1)
     }
-  };
+  }
 
   const onStepChange = (stepIndex: number) => {
-    setCurrentStep(stepIndex);
-  };
+    setCurrentStep(stepIndex)
+  }
 
   const handleStartOver = () => {
-    clearAllData();
-    reset(defaultValues);
-    setCurrentStep(0);
+    clearAllData()
+    reset(defaultValues)
+    setCurrentStep(0)
     toast({
       title: "Reset complete",
       description: "All data has been cleared. Starting fresh!",
-    });
-  };
+    })
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Virtual Dress Studio
-          </h1>
-          <p className="text-lg text-gray-600">
-            Design, try on, and order your custom dress
-          </p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Design Studio</h1>
+          <p className="text-lg text-gray-600">Design, try on, and order your custom dress</p>
         </div>
 
         {/* Progress Stepper */}
-        <ProgressStepper
-          steps={steps}
-          currentStep={currentStep}
-          onStepChange={setCurrentStep}
-        />
+        <ProgressStepper steps={steps} currentStep={currentStep} onStepChange={setCurrentStep} />
 
         {/* Start Over Button */}
         <div className="flex justify-end mb-6">
-          <Button
-            variant="outline"
-            onClick={handleStartOver}
-            className="flex items-center gap-2 bg-transparent"
-          >
+          <Button variant="outline" onClick={handleStartOver} className="flex items-center gap-2 bg-transparent">
             <RotateCcw className="h-4 w-4" />
             Start Over
           </Button>
@@ -152,5 +134,5 @@ export default function VirtualTryOnPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
