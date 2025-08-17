@@ -9,7 +9,7 @@ export const runtime = "nodejs";
  * @param dataUrl The data URL string (e.g., "data:image/jpeg;base64,...")
  * @returns Compressed data URL
  */
-async function compressImageDataUrl(dataUrl: string): Promise<string> {
+export async function compressImageDataUrl(dataUrl: string): Promise<string> {
   // Parse the data URL
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
   if (!match) {

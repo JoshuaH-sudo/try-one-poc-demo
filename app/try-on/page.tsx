@@ -1,39 +1,53 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Upload, User, Shirt, Sparkles, Loader2, AlertCircle, RotateCcw } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import Image from "next/image"
-import { compressImage, downloadImage } from "@/app/utils/imageUtils"
-import { ProgressStepper } from "@/app/components/ProgressStepper"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Upload,
+  User,
+  Shirt,
+  Sparkles,
+  Loader2,
+  AlertCircle,
+  RotateCcw,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
+import { compressImage, downloadImage } from "@/app/utils/imageUtils";
+import { ProgressStepper } from "@/app/components/ProgressStepper";
 
 interface UploadedImage {
-  file: File
-  preview: string
-  id: string
+  file: File;
+  preview: string;
+  id: string;
 }
 
 interface TryOnResult {
-  imageUrl: string
-  processingTime?: string
-  modelUsed?: string
-  provider?: string
-  prompt?: string
-  method?: string
+  imageUrl: string;
+  processingTime?: string;
+  modelUsed?: string;
+  provider?: string;
+  prompt?: string;
+  method?: string;
 }
 
 export default function TryOnPage() {
-  const [currentStep, setCurrentStep] = useState(0)
-  const [personImage, setPersonImage] = useState<UploadedImage | null>(null)
-  const [dressImage, setDressImage] = useState<UploadedImage | null>(null)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [tryOnResult, setTryOnResult] = useState<TryOnResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const { toast } = useToast()
+  const [currentStep, setCurrentStep] = useState(0);
+  const [personImage, setPersonImage] = useState<UploadedImage | null>(null);
+  const [dressImage, setDressImage] = useState<UploadedImage | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [tryOnResult, setTryOnResult] = useState<TryOnResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const steps = [
     {
@@ -54,52 +68,57 @@ export default function TryOnPage() {
       completed: tryOnResult !== null,
       current: currentStep === 2,
     },
-  ]
+  ];
 
-  const handleImageUpload = (files: FileList | null, type: "person" | "dress") => {
-    if (!files || files.length === 0) return
+  const handleImageUpload = (
+    files: FileList | null,
+    type: "person" | "dress"
+  ) => {
+    if (!files || files.length === 0) return;
 
-    const file = files[0]
+    const file = files[0];
     if (!file.type.startsWith("image/")) {
       toast({
         title: "Invalid file",
         description: "Please upload an image file.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    const preview = URL.createObjectURL(file)
-    const id = Math.random().toString(36).substr(2, 9)
-    const uploadedImage = { file, preview, id }
+    const preview = URL.createObjectURL(file);
+    const id = Math.random().toString(36).substr(2, 9);
+    const uploadedImage = { file, preview, id };
 
     if (type === "person") {
       if (personImage) {
-        URL.revokeObjectURL(personImage.preview)
+        URL.revokeObjectURL(personImage.preview);
       }
-      setPersonImage(uploadedImage)
+      setPersonImage(uploadedImage);
     } else {
       if (dressImage) {
-        URL.revokeObjectURL(dressImage.preview)
+        URL.revokeObjectURL(dressImage.preview);
       }
-      setDressImage(uploadedImage)
+      setDressImage(uploadedImage);
     }
 
     toast({
       title: "Image uploaded",
-      description: `${type === "person" ? "Person" : "Dress"} image uploaded successfully.`,
-    })
-  }
+      description: `${
+        type === "person" ? "Person" : "Dress"
+      } image uploaded successfully.`,
+    });
+  };
 
   const removeImage = (type: "person" | "dress") => {
     if (type === "person" && personImage) {
-      URL.revokeObjectURL(personImage.preview)
-      setPersonImage(null)
+      URL.revokeObjectURL(personImage.preview);
+      setPersonImage(null);
     } else if (type === "dress" && dressImage) {
-      URL.revokeObjectURL(dressImage.preview)
-      setDressImage(null)
+      URL.revokeObjectURL(dressImage.preview);
+      setDressImage(null);
     }
-  }
+  };
 
   const handleNext = () => {
     if (currentStep === 0 && !personImage) {
@@ -107,8 +126,8 @@ export default function TryOnPage() {
         title: "Missing photo",
         description: "Please upload your photo to continue.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     if (currentStep === 1 && !dressImage) {
@@ -116,14 +135,14 @@ export default function TryOnPage() {
         title: "Missing dress image",
         description: "Please upload a dress image to continue.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     if (currentStep < 2) {
-      setCurrentStep(currentStep + 1)
+      setCurrentStep(currentStep + 1);
     }
-  }
+  };
 
   const handleTryOn = async () => {
     if (!personImage || !dressImage) {
@@ -131,116 +150,131 @@ export default function TryOnPage() {
         title: "Missing images",
         description: "Please upload both person and dress images.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsGenerating(true)
-    setError(null)
+    setIsGenerating(true);
+    setError(null);
 
     try {
-      console.log("Starting try-on generation...")
+      console.log("Starting try-on generation...");
 
-      const formData = new FormData()
+      const formData = new FormData();
 
       // Compress and append images
       const compressedPersonImage = await compressImage(personImage.file, {
         maxWidth: 1024,
         maxHeight: 1536,
         quality: 0.8,
-      })
+      });
 
       const compressedDressImage = await compressImage(dressImage.file, {
         maxWidth: 1024,
         maxHeight: 1536,
         quality: 0.8,
-      })
+      });
 
-      formData.append("personImage_0", compressedPersonImage)
-      formData.append("clothingImage_0", compressedDressImage)
+      formData.append("personImage_0", compressedPersonImage);
+      formData.append("clothingImage_0", compressedDressImage);
 
-      console.log("Calling API route...")
+      console.log("Calling API route...");
 
       const response = await fetch("/api/try-on", {
         method: "POST",
         body: formData,
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
-      console.log("API route result:", result)
+      console.log("API route result:", result);
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error || "Try-on generation failed")
+        throw new Error(result.error || "Try-on generation failed");
       }
 
-      setTryOnResult(result as TryOnResult)
+      setTryOnResult(result as TryOnResult);
 
       toast({
         title: "Try-on generated!",
         description: `Generated using ${result.provider}. Ready for review!`,
-      })
+      });
     } catch (error) {
-      console.error("Error generating try-on:", error)
+      console.error("Error generating try-on:", error);
 
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred"
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
 
-      setError(errorMessage)
+      setError(errorMessage);
       toast({
         title: "Generation failed",
         description: errorMessage,
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
-  }
+  };
 
   const handleStartOver = () => {
     if (personImage) {
-      URL.revokeObjectURL(personImage.preview)
-      setPersonImage(null)
+      URL.revokeObjectURL(personImage.preview);
+      setPersonImage(null);
     }
     if (dressImage) {
-      URL.revokeObjectURL(dressImage.preview)
-      setDressImage(null)
+      URL.revokeObjectURL(dressImage.preview);
+      setDressImage(null);
     }
-    setTryOnResult(null)
-    setError(null)
-    setCurrentStep(0)
+    setTryOnResult(null);
+    setError(null);
+    setCurrentStep(0);
     toast({
       title: "Reset complete",
       description: "All images cleared. Ready for new try-on!",
-    })
-  }
+    });
+  };
 
   const onStepChange = (stepIndex: number) => {
     // Only allow going back to previous steps if they have required data
     if (stepIndex === 0) {
-      setCurrentStep(0)
+      setCurrentStep(0);
     } else if (stepIndex === 1 && personImage) {
-      setCurrentStep(1)
+      setCurrentStep(1);
     } else if (stepIndex === 2 && personImage && dressImage) {
-      setCurrentStep(2)
+      setCurrentStep(2);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4 lg:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Try-On Studio</h1>
-          <p className="text-lg text-gray-600">Upload a dress and your photo to see how it looks on you</p>
-          <p className="text-sm text-purple-600 mt-1">Powered by OpenAI's advanced image generation</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Try-On Studio
+          </h1>
+          <p className="text-lg text-gray-600">
+            Upload a dress and your photo to see how it looks on you
+          </p>
+          <p className="text-sm text-purple-600 mt-1">
+            Powered by OpenAI's advanced image generation
+          </p>
         </div>
 
         {/* Progress Stepper */}
-        <ProgressStepper steps={steps} currentStep={currentStep} onStepChange={onStepChange} />
+        <ProgressStepper
+          steps={steps}
+          currentStep={currentStep}
+          onStepChange={onStepChange}
+        />
 
         {/* Start Over Button */}
         <div className="flex justify-end mb-6">
-          <Button variant="outline" onClick={handleStartOver} className="flex items-center gap-2 bg-transparent">
+          <Button
+            variant="outline"
+            onClick={handleStartOver}
+            className="flex items-center gap-2 bg-transparent"
+          >
             <RotateCcw className="h-4 w-4" />
             Start Over
           </Button>
@@ -255,7 +289,12 @@ export default function TryOnPage() {
                 <div>
                   <h4 className="font-medium text-red-900">Generation Error</h4>
                   <p className="text-sm text-red-700 mt-1">{error}</p>
-                  <Button variant="outline" size="sm" className="mt-2 bg-transparent" onClick={() => setError(null)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 bg-transparent"
+                    onClick={() => setError(null)}
+                  >
                     Dismiss
                   </Button>
                 </div>
@@ -276,27 +315,37 @@ export default function TryOnPage() {
                     Upload Your Photo
                   </CardTitle>
                   <CardDescription>
-                    Upload a clear, full-body photo with good lighting. Standing straight and facing forward works best
-                    for the most accurate try-on results.
+                    Upload a clear, full-body photo with good lighting. Standing
+                    straight and facing forward works best for the most accurate
+                    try-on results.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors">
+                  <div className="space-y-4 flex gap-2">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors h-full">
                       <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                      <Label htmlFor="person-upload" className="cursor-pointer">
+                      <Label
+                        htmlFor="person-upload"
+                        className="cursor-pointer flex flex-col items-center"
+                      >
                         <span className="text-lg font-medium text-purple-600 hover:text-purple-500">
                           Click to upload your photo
                         </span>
-                        <p className="text-sm text-gray-500 mt-2">or drag and drop</p>
-                        <p className="text-xs text-gray-400 mt-1">Supports JPG, PNG, WebP</p>
+                        <p className="text-sm text-gray-500 mt-2">
+                          or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Supports JPG, PNG, WebP
+                        </p>
                       </Label>
                       <Input
                         id="person-upload"
                         type="file"
                         accept="image/*"
                         className="hidden"
-                        onChange={(e) => handleImageUpload(e.target.files, "person")}
+                        onChange={(e) =>
+                          handleImageUpload(e.target.files, "person")
+                        }
                       />
                     </div>
 
@@ -321,12 +370,16 @@ export default function TryOnPage() {
                         </div>
                       </div>
                     )}
-
-                    <div className="flex justify-center pt-4">
-                      <Button onClick={handleNext} disabled={!personImage} className="px-8" size="lg">
-                        Continue to Dress Upload
-                      </Button>
-                    </div>
+                  </div>
+                  <div className="flex justify-center pt-4">
+                    <Button
+                      onClick={handleNext}
+                      disabled={!personImage}
+                      className="px-8"
+                      size="lg"
+                    >
+                      Continue to Dress Upload
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -343,27 +396,37 @@ export default function TryOnPage() {
                     Upload Dress Image
                   </CardTitle>
                   <CardDescription>
-                    Upload a clear photo of the dress you want to try on. Images with plain backgrounds and good
-                    lighting work best for accurate results.
+                    Upload a clear photo of the dress you want to try on. Images
+                    with plain backgrounds and good lighting work best for
+                    accurate results.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors">
+                  <div className="space-y-4 flex gap-2">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors h-full">
                       <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                      <Label htmlFor="dress-upload" className="cursor-pointer">
+                      <Label
+                        htmlFor="dress-upload"
+                        className="cursor-pointer flex flex-col items-center"
+                      >
                         <span className="text-lg font-medium text-purple-600 hover:text-purple-500">
                           Click to upload dress image
                         </span>
-                        <p className="text-sm text-gray-500 mt-2">or drag and drop</p>
-                        <p className="text-xs text-gray-400 mt-1">Supports JPG, PNG, WebP</p>
+                        <p className="text-sm text-gray-500 mt-2">
+                          or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Supports JPG, PNG, WebP
+                        </p>
                       </Label>
                       <Input
                         id="dress-upload"
                         type="file"
                         accept="image/*"
                         className="hidden"
-                        onChange={(e) => handleImageUpload(e.target.files, "dress")}
+                        onChange={(e) =>
+                          handleImageUpload(e.target.files, "dress")
+                        }
                       />
                     </div>
 
@@ -388,15 +451,23 @@ export default function TryOnPage() {
                         </div>
                       </div>
                     )}
-
-                    <div className="flex justify-center gap-4 pt-4">
-                      <Button onClick={() => setCurrentStep(0)} variant="outline" className="px-6">
-                        Back
-                      </Button>
-                      <Button onClick={handleNext} disabled={!dressImage} className="px-8" size="lg">
-                        Continue to Try-On
-                      </Button>
-                    </div>
+                  </div>
+                  <div className="flex justify-center gap-4 pt-4">
+                    <Button
+                      onClick={() => setCurrentStep(0)}
+                      variant="outline"
+                      className="px-6"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={handleNext}
+                      disabled={!dressImage}
+                      className="px-8"
+                      size="lg"
+                    >
+                      Continue to Try-On
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -429,7 +500,9 @@ export default function TryOnPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-center">Dress to Try On</CardTitle>
+                    <CardTitle className="text-center">
+                      Dress to Try On
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {dressImage && (
@@ -497,20 +570,26 @@ export default function TryOnPage() {
                       {tryOnResult.processingTime && (
                         <div className="space-y-2 pt-3 border-t border-gray-200">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-500">Processing Time: {tryOnResult.processingTime}</span>
+                            <span className="text-gray-500">
+                              Processing Time: {tryOnResult.processingTime}
+                            </span>
                             <span className="text-purple-600">
                               {tryOnResult.provider} • {tryOnResult.modelUsed}
                             </span>
                           </div>
                           {tryOnResult.method && (
-                            <div className="text-sm text-gray-500">Method: {tryOnResult.method}</div>
+                            <div className="text-sm text-gray-500">
+                              Method: {tryOnResult.method}
+                            </div>
                           )}
                           {tryOnResult.prompt && (
                             <details className="text-sm">
                               <summary className="cursor-pointer text-gray-500 hover:text-gray-700">
                                 View Generation Prompt
                               </summary>
-                              <div className="mt-2 p-3 bg-gray-50 rounded text-gray-600">{tryOnResult.prompt}</div>
+                              <div className="mt-2 p-3 bg-gray-50 rounded text-gray-600">
+                                {tryOnResult.prompt}
+                              </div>
                             </details>
                           )}
                         </div>
@@ -520,17 +599,22 @@ export default function TryOnPage() {
                         <Button
                           onClick={async () => {
                             try {
-                              await downloadImage(tryOnResult.imageUrl, "standalone-tryon-result.png")
+                              await downloadImage(
+                                tryOnResult.imageUrl,
+                                "standalone-tryon-result.png"
+                              );
                               toast({
                                 title: "Downloaded",
-                                description: "Try-on result downloaded successfully.",
-                              })
+                                description:
+                                  "Try-on result downloaded successfully.",
+                              });
                             } catch (error) {
                               toast({
                                 title: "Download failed",
-                                description: "Failed to download try-on result.",
+                                description:
+                                  "Failed to download try-on result.",
                                 variant: "destructive",
-                              })
+                              });
                             }
                           }}
                           className="bg-green-600 hover:bg-green-700"
@@ -544,23 +628,37 @@ export default function TryOnPage() {
                             try {
                               // Download both original images and result as a set
                               if (personImage && dressImage) {
-                                await downloadImage(personImage.preview, "original-person-photo.png")
-                                await new Promise((resolve) => setTimeout(resolve, 500))
-                                await downloadImage(dressImage.preview, "original-dress-image.png")
-                                await new Promise((resolve) => setTimeout(resolve, 500))
-                                await downloadImage(tryOnResult.imageUrl, "tryon-result.png")
+                                await downloadImage(
+                                  personImage.preview,
+                                  "original-person-photo.png"
+                                );
+                                await new Promise((resolve) =>
+                                  setTimeout(resolve, 500)
+                                );
+                                await downloadImage(
+                                  dressImage.preview,
+                                  "original-dress-image.png"
+                                );
+                                await new Promise((resolve) =>
+                                  setTimeout(resolve, 500)
+                                );
+                                await downloadImage(
+                                  tryOnResult.imageUrl,
+                                  "tryon-result.png"
+                                );
 
                                 toast({
                                   title: "Download complete",
-                                  description: "All images downloaded: original photos and result.",
-                                })
+                                  description:
+                                    "All images downloaded: original photos and result.",
+                                });
                               }
                             } catch (error) {
                               toast({
                                 title: "Download failed",
                                 description: "Failed to download image set.",
                                 variant: "destructive",
-                              })
+                              });
                             }
                           }}
                           variant="outline"
@@ -574,8 +672,8 @@ export default function TryOnPage() {
                       <div className="flex justify-center pt-4">
                         <Button
                           onClick={() => {
-                            setTryOnResult(null)
-                            setCurrentStep(0)
+                            setTryOnResult(null);
+                            setCurrentStep(0);
                           }}
                           variant="outline"
                           className="bg-transparent"
@@ -591,7 +689,11 @@ export default function TryOnPage() {
               {/* Navigation */}
               {!tryOnResult && (
                 <div className="flex justify-center">
-                  <Button onClick={() => setCurrentStep(1)} variant="outline" className="bg-transparent">
+                  <Button
+                    onClick={() => setCurrentStep(1)}
+                    variant="outline"
+                    className="bg-transparent"
+                  >
                     Back to Dress Upload
                   </Button>
                 </div>
@@ -601,5 +703,5 @@ export default function TryOnPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
