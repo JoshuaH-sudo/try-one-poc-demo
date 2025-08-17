@@ -48,7 +48,7 @@ export function ProgressStepper({ steps, currentStep, onStepChange }: ProgressSt
               </div>
               <span
                 className={cn(
-                  "mt-2 text-sm font-medium",
+                  "mt-2 text-sm font-medium whitespace-nowrap",
                   step.current ? "text-blue-600" : "text-gray-500"
                 )}
               >

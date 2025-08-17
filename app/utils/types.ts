@@ -1,8 +1,4 @@
-export interface UploadedImage {
-  file: File
-  preview: string
-  id: string
-}
+import type { UploadedImage } from "./imageUtils"
 
 export interface DesignVariation {
   id: string
