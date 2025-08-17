@@ -11,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import type { UseFormReturn } from "react-hook-form";
 import type { FormValues } from "../utils/types";
 import Image from "next/image";
-import { useRouter } from "next/router";
 
 interface OrderStepProps {
   form: UseFormReturn<FormValues>;
@@ -20,7 +19,6 @@ interface OrderStepProps {
 export function OrderStep({ form }: OrderStepProps) {
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
 
   const {
     watch,
@@ -74,8 +72,6 @@ export function OrderStep({ form }: OrderStepProps) {
         title: "Order submitted!",
         description: "Your custom dress order has been sent to the tailor.",
       });
-
-      router.push("/success");
     } catch (error) {
       console.error("Error submitting order:", error);
       toast({
