@@ -91,3 +91,53 @@ export const removeImage = (image: UploadedImage | null) => {
     URL.revokeObjectURL(image.preview)
   }
 }
+
+// Utility function to download images
+export const downloadImage = async (imageUrl: string, filename: string) => {
+  try {
+    // If it's a data URL, download directly
+    if (imageUrl.startsWith("data:")) {
+      const link = document.createElement("a")
+      link.href = imageUrl
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      return
+    }
+
+    // If it's a regular URL, fetch and download
+    const response = await fetch(imageUrl)
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement("a")
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    // Clean up
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error("Error downloading image:", error)
+    throw new Error("Failed to download image")
+  }
+}
+
+// Utility to download multiple images as a zip (simplified version)
+export const downloadAllVariations = async (variations: Array<{ id: string; imageUrl: string; type: string }>) => {
+  try {
+    // Download each variation individually with descriptive names
+    for (const variation of variations) {
+      const filename = `design-${variation.type}-${variation.id}.png`
+      await downloadImage(variation.imageUrl, filename)
+      // Add small delay between downloads to avoid overwhelming the browser
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    }
+  } catch (error) {
+    console.error("Error downloading variations:", error)
+    throw new Error("Failed to download variations")
+  }
+}

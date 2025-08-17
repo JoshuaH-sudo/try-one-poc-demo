@@ -1,37 +1,38 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import type { UseFormReturn } from "react-hook-form";
-import type { FormValues } from "../utils/types";
-import Image from "next/image";
-import { useRouter } from "next/router";
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Send, Loader2 } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import type { UseFormReturn } from "react-hook-form"
+import type { FormValues } from "../utils/types"
+import Image from "next/image"
+import { useRouter } from "next/router"
+import { downloadImage } from "../utils/imageUtils"
 
 interface OrderStepProps {
-  form: UseFormReturn<FormValues>;
+  form: UseFormReturn<FormValues>
 }
 
 export function OrderStep({ form }: OrderStepProps) {
-  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
-  const { toast } = useToast();
-  const router = useRouter();
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false)
+  const { toast } = useToast()
+  const router = useRouter()
 
   const {
     watch,
     setValue,
     register,
     formState: { errors },
-  } = form;
-  const tailorForm = watch("tailorForm");
-  const selectedFront = watch("selectedFront");
-  const selectedBack = watch("selectedBack");
-  const tryOnResult = watch("tryOnResult");
+  } = form
+  const tailorForm = watch("tailorForm")
+  const selectedFront = watch("selectedFront")
+  const selectedBack = watch("selectedBack")
+  const tryOnResult = watch("tryOnResult")
 
   const submitToTailor = async () => {
     if (!tailorForm.fullName || !tailorForm.contact) {
@@ -39,11 +40,11 @@ export function OrderStep({ form }: OrderStepProps) {
         title: "Missing information",
         description: "Please fill in your name and contact information.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
-    setIsSubmittingOrder(true);
+    setIsSubmittingOrder(true)
 
     try {
       const orderData = {
@@ -54,7 +55,7 @@ export function OrderStep({ form }: OrderStepProps) {
         },
         tryOnImage: tryOnResult?.imageUrl,
         timestamp: new Date().toISOString(),
-      };
+      }
 
       const response = await fetch("/api/submit-order", {
         method: "POST",
@@ -62,34 +63,33 @@ export function OrderStep({ form }: OrderStepProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(orderData),
-      });
+      })
 
-      const result = await response.json();
+      const result = await response.json()
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error || "Order submission failed");
+        throw new Error(result.error || "Order submission failed")
       }
 
       toast({
         title: "Order submitted!",
         description: "Your custom dress order has been sent to the tailor.",
-      });
+      })
 
-      router.push("/success");
+      router.push("/success")
     } catch (error) {
-      console.error("Error submitting order:", error);
+      console.error("Error submitting order:", error)
       toast({
         title: "Submission failed",
-        description:
-          error instanceof Error ? error.message : "Unknown error occurred",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsSubmittingOrder(false);
+      setIsSubmittingOrder(false)
     }
-  };
+  }
 
-  console.log("try on result", tryOnResult);
+  console.log("try on result", tryOnResult)
 
   return (
     <div className="space-y-6 flex flex-row justify-between gap-2">
@@ -102,15 +102,37 @@ export function OrderStep({ form }: OrderStepProps) {
         </CardHeader>
         <CardContent className="space-y-4 h-full">
           {tryOnResult ? (
-            <div className="relative w-full rounded-lg overflow-hidden">
-              <Image
-                src={tryOnResult.imageUrl}
-                alt="Try-On Result"
-                // 1024x1536
-                width={1024 / 4}
-                height={1536 / 4}
-                className="rounded-lg object-cover w-full"
-              />
+            <div className="space-y-4">
+              <div className="relative w-full rounded-lg overflow-hidden">
+                <Image
+                  src={tryOnResult.imageUrl || "/placeholder.svg"}
+                  alt="Try-On Result"
+                  width={1024 / 4}
+                  height={1536 / 4}
+                  className="rounded-lg object-cover w-full"
+                />
+              </div>
+              <Button
+                variant="outline"
+                className="w-full bg-green-50 hover:bg-green-100 border-green-200"
+                onClick={async () => {
+                  try {
+                    await downloadImage(tryOnResult.imageUrl, "final-tryon-result.png")
+                    toast({
+                      title: "Downloaded",
+                      description: "Try-on result downloaded successfully.",
+                    })
+                  } catch (error) {
+                    toast({
+                      title: "Download failed",
+                      description: "Failed to download try-on result.",
+                      variant: "destructive",
+                    })
+                  }
+                }}
+              >
+                Download Try-On Result
+              </Button>
             </div>
           ) : (
             <p className="text-sm text-gray-500">No try-on result available</p>
@@ -138,9 +160,7 @@ export function OrderStep({ form }: OrderStepProps) {
                 placeholder="Enter your full name"
               />
               {errors.tailorForm?.fullName && (
-                <p className="text-sm text-red-500 mt-1">
-                  {errors.tailorForm.fullName.message}
-                </p>
+                <p className="text-sm text-red-500 mt-1">{errors.tailorForm.fullName.message}</p>
               )}
             </div>
 
@@ -154,9 +174,7 @@ export function OrderStep({ form }: OrderStepProps) {
                 placeholder="+1234567890"
               />
               {errors.tailorForm?.contact && (
-                <p className="text-sm text-red-500 mt-1">
-                  {errors.tailorForm.contact.message}
-                </p>
+                <p className="text-sm text-red-500 mt-1">{errors.tailorForm.contact.message}</p>
               )}
             </div>
           </div>
@@ -164,49 +182,29 @@ export function OrderStep({ form }: OrderStepProps) {
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <Label htmlFor="bust">Bust (inches)</Label>
-              <Input
-                id="bust"
-                {...register("tailorForm.bust")}
-                placeholder="34"
-              />
+              <Input id="bust" {...register("tailorForm.bust")} placeholder="34" />
             </div>
 
             <div>
               <Label htmlFor="waist">Waist (inches)</Label>
-              <Input
-                id="waist"
-                {...register("tailorForm.waist")}
-                placeholder="28"
-              />
+              <Input id="waist" {...register("tailorForm.waist")} placeholder="28" />
             </div>
 
             <div>
               <Label htmlFor="hips">Hips (inches)</Label>
-              <Input
-                id="hips"
-                {...register("tailorForm.hips")}
-                placeholder="36"
-              />
+              <Input id="hips" {...register("tailorForm.hips")} placeholder="36" />
             </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <Label htmlFor="height">Height (feet)</Label>
-              <Input
-                id="height"
-                {...register("tailorForm.height")}
-                placeholder="5'6&quot;"
-              />
+              <Input id="height" {...register("tailorForm.height")} placeholder="5'6&quot;" />
             </div>
 
             <div>
               <Label htmlFor="weight">Weight (kg)</Label>
-              <Input
-                id="weight"
-                {...register("tailorForm.weight")}
-                placeholder="60"
-              />
+              <Input id="weight" {...register("tailorForm.weight")} placeholder="60" />
             </div>
           </div>
 
@@ -220,12 +218,7 @@ export function OrderStep({ form }: OrderStepProps) {
             />
           </div>
 
-          <Button
-            onClick={submitToTailor}
-            disabled={isSubmittingOrder}
-            className="w-full"
-            size="lg"
-          >
+          <Button onClick={submitToTailor} disabled={isSubmittingOrder} className="w-full" size="lg">
             {isSubmittingOrder ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -241,5 +234,5 @@ export function OrderStep({ form }: OrderStepProps) {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

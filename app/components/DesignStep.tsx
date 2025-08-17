@@ -11,7 +11,14 @@ import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
 import type { UseFormReturn } from "react-hook-form"
 import type { FormValues } from "../utils/types"
-import { handleImageUpload, removeImage, compressImage, type UploadedImage } from "../utils/imageUtils"
+import {
+  handleImageUpload,
+  removeImage,
+  compressImage,
+  downloadImage,
+  downloadAllVariations,
+  type UploadedImage,
+} from "../utils/imageUtils"
 
 interface DesignStepProps {
   form: UseFormReturn<FormValues>
@@ -259,7 +266,31 @@ export function DesignStep({ form, onNext }: DesignStepProps) {
       {designVariations.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Generated Design Variations</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              <span>Generated Design Variations</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await downloadAllVariations(designVariations)
+                    toast({
+                      title: "Download started",
+                      description: "All variations are being downloaded.",
+                    })
+                  } catch (error) {
+                    toast({
+                      title: "Download failed",
+                      description: "Failed to download variations.",
+                      variant: "destructive",
+                    })
+                  }
+                }}
+                className="bg-transparent"
+              >
+                Download All
+              </Button>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2">
@@ -268,8 +299,8 @@ export function DesignStep({ form, onNext }: DesignStepProps) {
                 <div className="grid gap-2 grid-cols-2">
                   {designVariations
                     .filter((v) => v.type === "front")
-                    .map((variation) => (
-                      <div key={variation.id} className="relative">
+                    .map((variation, index) => (
+                      <div key={variation.id} className="relative group">
                         <Image
                           src={variation.imageUrl || "/placeholder.svg"}
                           alt="Front variation"
@@ -277,6 +308,28 @@ export function DesignStep({ form, onNext }: DesignStepProps) {
                           height={200}
                           className="rounded-lg object-cover w-full"
                         />
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={async () => {
+                            try {
+                              await downloadImage(variation.imageUrl, `front-design-${index + 1}.png`)
+                              toast({
+                                title: "Downloaded",
+                                description: `Front design ${index + 1} downloaded.`,
+                              })
+                            } catch (error) {
+                              toast({
+                                title: "Download failed",
+                                description: "Failed to download image.",
+                                variant: "destructive",
+                              })
+                            }
+                          }}
+                        >
+                          ↓
+                        </Button>
                       </div>
                     ))}
                 </div>
@@ -287,8 +340,8 @@ export function DesignStep({ form, onNext }: DesignStepProps) {
                   <div className="grid gap-2 grid-cols-2">
                     {designVariations
                       .filter((v) => v.type === "back")
-                      .map((variation) => (
-                        <div key={variation.id} className="relative">
+                      .map((variation, index) => (
+                        <div key={variation.id} className="relative group">
                           <Image
                             src={variation.imageUrl || "/placeholder.svg"}
                             alt="Back variation"
@@ -296,6 +349,28 @@ export function DesignStep({ form, onNext }: DesignStepProps) {
                             height={200}
                             className="rounded-lg object-cover w-full"
                           />
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={async () => {
+                              try {
+                                await downloadImage(variation.imageUrl, `back-design-${index + 1}.png`)
+                                toast({
+                                  title: "Downloaded",
+                                  description: `Back design ${index + 1} downloaded.`,
+                                })
+                              } catch (error) {
+                                toast({
+                                  title: "Download failed",
+                                  description: "Failed to download image.",
+                                  variant: "destructive",
+                                })
+                              }
+                            }}
+                          >
+                            ↓
+                          </Button>
                         </div>
                       ))}
                   </div>

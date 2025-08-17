@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
 import type { UseFormReturn } from "react-hook-form"
 import type { FormValues } from "../utils/types"
-import { handleImageUpload, removeImage, compressImage, type UploadedImage } from "../utils/imageUtils"
+import { handleImageUpload, removeImage, compressImage, downloadImage, type UploadedImage } from "../utils/imageUtils"
 
 interface TryOnStepProps {
   form: UseFormReturn<FormValues>
@@ -114,10 +114,10 @@ export function TryOnStep({ form, onNext }: TryOnStepProps) {
               <div className="grid gap-2 grid-cols-2">
                 {designVariations
                   .filter((v) => v.type === "front")
-                  .map((variation) => (
+                  .map((variation, index) => (
                     <div
                       key={variation.id}
-                      className={`relative cursor-pointer rounded-lg border-2 ${
+                      className={`relative cursor-pointer rounded-lg border-2 group ${
                         selectedFront === variation.id ? "border-blue-500" : "border-gray-200"
                       }`}
                       onClick={() => setValue("selectedFront", variation.id)}
@@ -125,7 +125,6 @@ export function TryOnStep({ form, onNext }: TryOnStepProps) {
                       <Image
                         src={variation.imageUrl || "/placeholder.svg"}
                         alt="Front variation"
-                        // 1024x1536
                         width={1024 / 4}
                         height={1536 / 4}
                         className="rounded-lg object-cover w-full"
@@ -135,6 +134,29 @@ export function TryOnStep({ form, onNext }: TryOnStepProps) {
                           ✓
                         </div>
                       )}
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          try {
+                            await downloadImage(variation.imageUrl, `front-design-${index + 1}.png`)
+                            toast({
+                              title: "Downloaded",
+                              description: `Front design ${index + 1} downloaded.`,
+                            })
+                          } catch (error) {
+                            toast({
+                              title: "Download failed",
+                              description: "Failed to download image.",
+                              variant: "destructive",
+                            })
+                          }
+                        }}
+                      >
+                        ↓
+                      </Button>
                     </div>
                   ))}
               </div>
@@ -145,10 +167,10 @@ export function TryOnStep({ form, onNext }: TryOnStepProps) {
                 <div className="grid gap-2 grid-cols-2">
                   {designVariations
                     .filter((v) => v.type === "back")
-                    .map((variation) => (
+                    .map((variation, index) => (
                       <div
                         key={variation.id}
-                        className={`relative cursor-pointer rounded-lg border-2 ${
+                        className={`relative cursor-pointer rounded-lg border-2 group ${
                           selectedBack === variation.id ? "border-blue-500" : "border-gray-200"
                         }`}
                         onClick={() => setValue("selectedBack", variation.id)}
@@ -165,6 +187,29 @@ export function TryOnStep({ form, onNext }: TryOnStepProps) {
                             ✓
                           </div>
                         )}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            try {
+                              await downloadImage(variation.imageUrl, `back-design-${index + 1}.png`)
+                              toast({
+                                title: "Downloaded",
+                                description: `Back design ${index + 1} downloaded.`,
+                              })
+                            } catch (error) {
+                              toast({
+                                title: "Download failed",
+                                description: "Failed to download image.",
+                                variant: "destructive",
+                              })
+                            }
+                          }}
+                        >
+                          ↓
+                        </Button>
                       </div>
                     ))}
                 </div>

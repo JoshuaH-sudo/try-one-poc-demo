@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Upload, User, Shirt, Sparkles, Loader2, AlertCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
-import { compressImage } from "@/app/utils/imageUtils"
+import { compressImage, downloadImage } from "@/app/utils/imageUtils"
 
 interface UploadedImage {
   file: File
@@ -373,21 +373,60 @@ export default function TryOnPage() {
                       </div>
                     )}
 
-                    <Button
-                      onClick={() => {
-                        // Create download link
-                        const link = document.createElement("a")
-                        link.href = tryOnResult.imageUrl
-                        link.download = "try-on-result.png"
-                        document.body.appendChild(link)
-                        link.click()
-                        document.body.removeChild(link)
-                      }}
-                      className="w-full bg-green-600 hover:bg-green-700"
-                      size="lg"
-                    >
-                      Download Result
-                    </Button>
+                    <div className="space-y-3">
+                      <Button
+                        onClick={async () => {
+                          try {
+                            await downloadImage(tryOnResult.imageUrl, "standalone-tryon-result.png")
+                            toast({
+                              title: "Downloaded",
+                              description: "Try-on result downloaded successfully.",
+                            })
+                          } catch (error) {
+                            toast({
+                              title: "Download failed",
+                              description: "Failed to download try-on result.",
+                              variant: "destructive",
+                            })
+                          }
+                        }}
+                        className="w-full bg-green-600 hover:bg-green-700"
+                        size="lg"
+                      >
+                        Download Result
+                      </Button>
+
+                      <Button
+                        onClick={async () => {
+                          try {
+                            // Download both original images and result as a set
+                            if (personImage && dressImage) {
+                              await downloadImage(personImage.preview, "original-person-photo.png")
+                              await new Promise((resolve) => setTimeout(resolve, 500))
+                              await downloadImage(dressImage.preview, "original-dress-image.png")
+                              await new Promise((resolve) => setTimeout(resolve, 500))
+                              await downloadImage(tryOnResult.imageUrl, "tryon-result.png")
+
+                              toast({
+                                title: "Download complete",
+                                description: "All images downloaded: original photos and result.",
+                              })
+                            }
+                          } catch (error) {
+                            toast({
+                              title: "Download failed",
+                              description: "Failed to download image set.",
+                              variant: "destructive",
+                            })
+                          }
+                        }}
+                        variant="outline"
+                        className="w-full bg-transparent"
+                        size="lg"
+                      >
+                        Download Complete Set
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-64 text-gray-400">
