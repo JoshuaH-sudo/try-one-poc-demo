@@ -175,8 +175,8 @@ export default function TryOnPage() {
         quality: 0.8,
       });
 
-      formData.append("personImage_0", personImage.file);
-      formData.append("clothingImage_0", dressImage.file);
+      formData.append("personImage_0", compressedPersonImage);
+      formData.append("clothingImage_0", compressedDressImage);
 
       console.log("Calling API route...");
 
