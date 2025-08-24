@@ -22,13 +22,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Per-file size validation (keep generous 1MB per file)
-    const maxSize = 1 * 1024 * 1024 // 1MB
+    // Per-file size validation (keep generous 2MB per file)
+    const maxSize = 2 * 1024 * 1024 // 2MB
     for (const img of [...personImages, ...clothingImages]) {
       console.log(`Validating file size: ${img.name} (${img.size} bytes)`)
       if (img.size > maxSize) {
         return NextResponse.json(
-          { success: false, error: `File "${img.name}" is too large. Maximum size is 1MB.` },
+          { success: false, error: `File "${img.name}" is too large. Maximum size is 2MB.` },
           { status: 400 },
         )
       }

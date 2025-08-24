@@ -79,7 +79,7 @@ export async function generateTryOnWithOpenAI(
 
     const editResponse = await openai.images.edit({
       model: "gpt-image-1",
-      image: personImage,
+      image: [personImage, clothingImage],
       prompt: prompt,
       n: 1,
       size: "1024x1536",
